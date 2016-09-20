@@ -1,0 +1,3 @@
+include src/csim/__version__
+include HISTORY.rst
+include README.rst
