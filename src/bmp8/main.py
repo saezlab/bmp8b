@@ -23,6 +23,7 @@ import sys
 import imp
 import re
 import itertools
+import copy
 
 import xlrd
 import openpyxl
@@ -36,10 +37,14 @@ if 'unicode' not in __builtins__:
 
 class Bmp8(object):
     
-    def __init__(self
+    def __init__(self,
                  dirBase = '..',
                  fnIdMapping = 'PEX100_Layout.csv',
-                 fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx'):
+                 fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx',
+                 ncbi_tax_id = 10090,
+                 org_strict = True,
+                 flex_resnum = True):
+        
         self.dirBase = dirBase
         self.fnXlsFullData = os.path.join(
             self.dirBase,
@@ -57,7 +62,137 @@ class Bmp8(object):
             'Tyr': 'Y',
             'Ser': 'S'
         }
-        self.pa = pypath.PyPath(ncbi_tax_id = 10090)
+        self.dOrg = {
+            'H': 9606,
+            'M': 10090,
+            'R': 10116
+        }
+        
+        self.ncbi_tax_id = ncbi_tax_id
+        self.org_strict = org_strict
+        self.flex_resnum = flex_resnum
+        
+        self.standards = ['Beta actin', 'GAPDH', 'PKC pan activation site']
+        self.dStd = {}
+        
+        self.dMissingHomologs = {
+            'IKK-alpha': 'Q60680',
+            'IKK-alpha/beta': 'Q60680',
+            'GAPDH': 'P16858',
+            'Calmodulin': 'P62204',
+            'TYK2': 'Q9R117',
+            'Beta actin': 'P60710',
+            'Met': 'P16056',
+            'ATP1A1/Na+K+ ATPase1': 'Q8VDN2',
+            'GRK1': 'Q9WVL4',
+            'MAP3K7/TAK1': 'Q62073',
+            'Rel': 'P15307',
+            'Gab2': 'Q9Z1S8',
+            'DDX5/DEAD-box protein 5': 'Q61656',
+            'MARCKS': 'P26645',
+            'PLD1': 'Q9Z280',
+            'CD45': 'P06800',
+            'Pim-1': 'P06803',
+            'MAP3K1/MEKK1': 'P53349',
+            'Progesterone Receptor': 'Q00175',
+            'PAK1': 'O88643',
+            'RapGEF1': 'Q8C5V7',
+            'PAK1/2': ['O88643', 'Q8CIN4'],
+            'PAK1/2/3': ['O88643', 'Q8CIN4', 'Q61036'],
+            'CD227/mucin 1': 'Q02496',
+            'HDAC3': 'O88895',
+            'TSC2': 'Q61037',
+            'Tuberin/TSC2': 'Q61037',
+            'CaMK4': 'P08414',
+            'STAT2': 'Q9WVL2',
+            'AurB/C': ['O70126', 'O88445'],
+            'JAK1': 'P52332',
+            'NFAT4': 'P97305',
+            'HDAC5': 'Q9Z2V6',
+            'VEGFR2': 'P35918',
+            'STAT1': 'P42225',
+            'EPHA2/3/4': ['Q03145', 'Q03137', 'P29319'],
+            'Histone H3.1': ['P68433', 'P84228', 'P84244']
+        }
+        
+        self.dAssayRefCorrection = {
+            ('Kv1.3/KCNA3', 135): {
+                9606: ('Y', 187),
+                10090: ('Y', 140),
+                10116: ('Y', 137)
+            },
+            ('PKC delta', 505): {
+                9606: ('T', 507)
+            },
+            ('Opioid Receptor', 375): {
+                9606: ('S', 377)
+            },
+            ('IkB-epsilon', 22): {
+                9606: ('S', 161)
+            },
+            ('HSL', 563): {
+                9606: ('S', 853),
+                10090: ('S', 557),
+                10116: ('S', 863)
+            },
+            ('KSR', 392): {
+                9606: ('S', 406),
+                10116: ('S', 40)
+            },
+            ('BAD', 155): {
+                9606: ('S', 118),
+                10116: ('S', 156)
+            },
+            ('BAD', 112): {
+                9606: ('S', 75),
+                10116: ('S', 113)
+            },
+            # this EPHB2
+            ('EPHB1/2', 604): {
+                9606: ('Y', 596),
+                10090: ('Y', 596),
+                10116: ('Y', 709)
+            },
+            ('NMDAR2B', 1472): {
+                9606: ('Y', 1474)
+            },
+            ('SRF', 99): {
+                9606: ('S', 103)
+            },
+            ('JAK1', 1022): {
+                9606: ('Y', 1034),
+                10090: ('Y', 1033),
+                10116: ('Y', 1078)
+            },
+            ('IkB-beta', 19): {
+                9606: ('S', 19)
+            },
+            ('Myosin regulatory light chain 2', 18): {
+                9606: ('S', 20),
+                10090: ('S', 20),
+                10116: ('S', 20)
+            },
+            ('BAD', 128): {
+                9606: ('S', 91),
+                10116: ('S', 129)
+            },
+            ('BAD', 136): {
+                9606: ('S', 99),
+                10116: ('S', 137)
+            },
+            ('RelB', 552): {
+                9606: ('S', 573)
+            },
+            ('IL3RB', 593): {
+                10090: ('Y', 595)
+            },
+            ('BIM', 65): {
+                9606: ('S', 69)
+            },
+            ('CaMK4', 196): {
+                9606: ('T', 200)
+            }
+        }
     
     def reload(self):
         modname = self.__class__.__module__
@@ -70,6 +205,21 @@ class Bmp8(object):
     # Loading experimental data.
     #
     
+    def init(self):
+        self.init_pypath()
+        self.idmapping()
+        self.read_tables()
+        self.load_ptms()
+        self.load_seq()
+        self.create_ptms()
+        self.ptms_lookup()
+    
+    def init_pypath(self):
+        """
+        Initializes a PyPath object for mapping and network building.
+        """
+        self.pa = pypath.PyPath(ncbi_tax_id = self.ncbi_tax_id)
+    
     def read_tables(self):
         """
         Reads all data tables.
@@ -78,6 +228,50 @@ class Bmp8(object):
         self.read_coeffvar()
         self.read_normalized()
         self.read_psites_diffs()
+    
+    def idmapping(self):
+        """
+        Builds the idmapping table in order to translate the custom names
+        to UniProts already at loading the table.
+        """
+        self.read_idmapping()
+        self.read_organism_specificities()
+        if self.ncbi_tax_id == 10090:
+            self.mousedict()
+            self.idmapping2mouse()
+            self.dNamesUniprots = self.dNamesMouseUniprots
+        else:
+            self.dNamesHumanUniprots = \
+                dict(
+                    map(
+                        lambda x:
+                            (
+                                x[0],
+                                x[1][0]
+                            ),
+                        iteritems(self.dNamesIds)
+                    )
+                )
+            
+            self.dNamesUniprots = self.dNamesHumanUniprots
+        
+        self.dOrgSpecUniprot = \
+            dict(
+                itertools.chain(
+                    *map(
+                        lambda i:
+                            map(
+                                lambda u:
+                                    (
+                                        (u, i[0][1], i[0][2]),
+                                        i[1]
+                                    ),
+                                self.dNamesUniprots[i[0][0]]
+                            ),
+                        iteritems(self.dOrgSpec)
+                    )
+                )
+            )
     
     def read_psites_diffs(self):
         """
@@ -91,21 +285,21 @@ class Bmp8(object):
         Reads the mean of duplicates signal values.
         """
         
-        self.read_data('Signal', 0, 9, 5, 1318, 1)
+        self.read_data('Signal', 0, 9, 5, 1320, 1)
     
     def read_coeffvar(self):
         """
         Reads coefficient of variation values for each pair of spots.
         """
         
-        self.read_data('CVar', 0, 9, 10, 1318, 6)
+        self.read_data('CVar', 0, 9, 10, 1320, 6)
     
     def read_normalized(self):
         """
         Reads the values normalized to median.
         """
         
-        self.read_data('Norm', 0, 9, 15, 1318, 11)
+        self.read_data('Norm', 0, 9, 15, 1320, 11)
     
     def read_data(self, name, col, row, ncol, nrow, vcol):
         """
@@ -120,12 +314,34 @@ class Bmp8(object):
         attr = 'll%s' % name
         
         setattr(self, attr,
-                self.ll_table_slice(self.fullData, row, col, nrow, ncol))
+                self.ll_table_slice(self.llFullData, col, row, ncol, nrow))
         
-        data, annot = self.get_arrays(getattr(self, attr), vcol)
+        annot, data = self.get_arrays(getattr(self, attr), vcol)
         
-        setattr(self, 'a%sAnnot', annot)
-        setattr(self, 'a%sData', data)
+        setattr(self, 'a%sAnnot' % name, annot)
+        setattr(self, 'a%sData' % name, data)
+        
+        self.dStd[name] = self.get_standards(name, vcol)
+    
+    def get_standards(self, name, vcol):
+        """
+        Gets the values from the standards.
+        """
+        return \
+            dict(
+                map(
+                    lambda l:
+                        (
+                            l[0],
+                            l[vcol:]
+                        ),
+                    filter(
+                        lambda l:
+                            l[0] in self.standards,
+                        getattr(self, 'll%s' % name)
+                    )
+                )
+            )
     
     def read_raw(self):
         """
@@ -210,65 +426,69 @@ class Bmp8(object):
         the column number where data values start.
         """
         
-        def get_residues(res):
-            """
-            Matches residues in string,
-            returns tuples of tuples with residue names and numbers.
-            """
-            ress = self.reRes.findall(res)
-            aa = ''
-            sres = []
-            for r in ress:
-                if r[0] in self.dAaletters:
-                    aa = self.dAaletters[r[0]]
-                sres.append((aa, int(r[1])))
-            return tuple(sres)
-        
         return \
             list(
                 map(
                     lambda a:
-                        np.array(a[0], a[1]),
+                        np.array(a[0], dtype = a[1]),
                     # zip data and dtype
                     zip(
                         # zip annotations and values
                         zip(
                             *list(
-                                # chain rows & residues
-                                itertools.chain(
-                                    map(
-                                        # iterate rows
-                                        lambda ll:
-                                            list(
-                                                map(
-                                                    # iterate residues
-                                                    lambda res:
-                                                        (
-                                                            # annotation
-                                                            [
-                                                                ll[0][0],
-                                                                ll[0][1],
-                                                                res[0],
-                                                                res[1]
-                                                            ],
-                                                            # values
-                                                            ll[1]
-                                                        ),
-                                                    get_residues(ll[0][2])
-                                                )
-                                            ),
-                                            [m[0], m[1], get_residues(m[2])],
-                                        map(
-                                            # for each row, match annotation
-                                            # and convert data to float
-                                            lambda l:
-                                                (
-                                                    self.reAnnot.\
-                                                        match(l[0]).groups(0),
-                                                    list(map(float, l[3:]))
+                                # filter organism mismatches
+                                filter(
+                                    lambda r:
+                                        not self.org_strict or \
+                                            self.ncbi_tax_id in \
+                                            self.dOrgSpec[(r[0][1], r[0][3], r[0][4])],
+                                    # chain rows & residues
+                                    itertools.chain(
+                                        *map(
+                                            # iterate rows
+                                            lambda ll:
+                                                list(
+                                                    itertools.chain(
+                                                        *map(
+                                                            # iterate residues
+                                                            lambda res:
+                                                                map(
+                                                                    lambda u:
+                                                                        (
+                                                                            # annotation
+                                                                            [
+                                                                                u,
+                                                                                ll[0][0],
+                                                                                ll[0][1],
+                                                                                res[0],
+                                                                                res[1]
+                                                                            ],
+                                                                            # values
+                                                                            ll[1]
+                                                                        ),
+                                                                    self.dNamesUniprots[ll[0][0]]
+                                                                ),
+                                                            self.get_residues(ll[0][2])
+                                                        )
+                                                    )
                                                 ),
-                                            # starting from list of lists
-                                            llTable
+                                            map(
+                                                # for each row, match annotation
+                                                # and convert data to float
+                                                lambda l:
+                                                    (
+                                                        self.reAnnot.\
+                                                            match(l[0]).groups(0),
+                                                        list(map(float, l[vcol:]))
+                                                    ),
+                                                # starting from list of lists
+                                                filter(
+                                                    # filter standards
+                                                    lambda l:
+                                                        l[0] not in self.standards,
+                                                    llTable
+                                                )
+                                            )
                                         )
                                     )
                                 )
@@ -280,28 +500,485 @@ class Bmp8(object):
                 )
             )
     
+    def get_residues(self, res):
+        """
+        Matches residues in string,
+        returns tuples of tuples with residue names and numbers.
+        """
+        ress = self.reRes.findall(res)
+        aa = ''
+        sres = []
+        for r in ress:
+            if r[0] in self.dAaletters:
+                aa = self.dAaletters[r[0]]
+            sres.append((aa, int(r[1])))
+        return tuple(sres)
+    
+    def read_organism_specificities(self):
+        """
+        Reads the organism specificities of the assay probes.
+        These are either for human, mouse, rat, or any combination of these.
+        """
+        with open(self.fnIdMapping, 'r') as f:
+            self.dOrgSpec = \
+                dict(
+                    itertools.chain(
+                        *map(
+                            lambda p:
+                                map(
+                                    lambda res:
+                                        (
+                                            (p[0][0], res[0], res[1]),
+                                            list(
+                                                map(
+                                                    lambda s:
+                                                        self.dOrg[s],
+                                                    p[1]
+                                                )
+                                            )
+                                        ),
+                                    self.get_residues(p[0][2])
+                                ),
+                            map(
+                                lambda l:
+                                    (
+                                        self.reAnnot.match(l[1]).groups(0),
+                                        l[2]
+                                    ),
+                                filter(
+                                    lambda l:
+                                        l[1].strip() not in self.standards,
+                                    map(
+                                        lambda l:
+                                            l.split('\t'),
+                                        f
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+    
+    def read_idmapping(self):
+        """
+        Reads the mapping between the assay custom names and
+        standard IDs (UniProt and Entrez Gene).
+        """
+        with open(self.fnIdMapping, 'r') as f:
+            self.dNamesIds = \
+                dict(
+                    map(
+                        lambda l:
+                            (
+                                self.reAnnot.match(l[1]).groups(0)[0] \
+                                    if l[1] not in self.standards \
+                                    else l[1], # name
+                                (
+                                    list(
+                                        map(
+                                            lambda u:
+                                                u.strip(),
+                                            l[3].strip().split('/'), # uniprot
+                                        )
+                                    ),
+                                    list(
+                                        map(
+                                            lambda e:
+                                                e.strip(),
+                                            l[4].strip().replace(
+                                                '\xa0', '').split('/')# entrez
+                                        )
+                                    )
+                                )
+                            ),
+                        map(
+                            lambda l:
+                                l.split('\t'),
+                            f
+                        )
+                    )
+                )
+    
+    def idmapping2mouse(self):
+        """
+        Creates a dict of names to mouse UniProt IDs.
+        """
+        self.dNamesMouseUniprots = \
+            dict(
+                map(
+                    lambda i:
+                        (
+                            i[0],
+                            list(
+                                itertools.chain(
+                                    *map(
+                                        lambda e:
+                                            self.pa.mapper.map_name(e,
+                                                                    'entrez',
+                                                                    'uniprot',
+                                                                    10090),
+                                        reduce(
+                                            lambda s1, s2:
+                                                s1 | s2,
+                                            map(
+                                                lambda h:
+                                                    self.dHuman2Mouse[h],
+                                                filter(
+                                                    lambda h:
+                                                        h in self.dHuman2Mouse,
+                                                    i[1][1]
+                                                )
+                                            ),
+                                            set([])
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                    iteritems(self.dNamesIds)
+                )
+            )
+        
+        # adding missing homologs
+        for n in self.dNamesMouseUniprots.keys():
+            if n in self.dMissingHomologs:
+                m = self.dMissingHomologs[n]
+                if type(m) is list:
+                    self.dNamesMouseUniprots[n].extend(m)
+                else:
+                    self.dNamesMouseUniprots[n].append(m)
+                self.dNamesMouseUniprots[n] = \
+                    list(set(self.dNamesMouseUniprots[n]))
+    
+    def mousedict(self):
+        """
+        Reads human to mouse mapping from HomoloGene.
+        """
+        self.dHuman2Mouse = pypath.dataio.homologene_dict(9606, 10090, 'entrez')
+    
     #
     # Loading database data.
     #
     
     def load_ptms(self):
         """
-        Obtains a list of all kinase-substrate interaction from
+        Obtains a list of all kinase-substrate interactions from
         Signor, phosphoELM, PhosphoSite and dbPTM.
         Creates a dict `dPhosDb` where (kinase, substrate) UniProts are keys
         and list of PTMs are values.
         """
         self.dPhosDb = {}
         
-        lKinSub = itertools.chain(
-            self.pa.load_signor_ptms(return_raw=True),
-            self.pa.load_phosphoelm(return_raw=True),
-            self.pa.load_dbptm(return_raw=True),
-            self.pa.load_psite_phos(return_raw=True)
-        )
+        if self.ncbi_tax_id == 10090:
+            lKinSub = itertools.chain(
+                self.pa.load_signor_ptms(return_raw=True),
+                self.pa.load_phosphoelm(return_raw=True),
+                self.pa.load_dbptm(return_raw=True),
+                self.pa.load_psite_phos(return_raw=True)
+            )
+        else:
+            lKinSub = itertools.chain(
+                self.pa.load_signor_ptms(return_raw=True),
+                self.pa.load_li2012_ptms(return_raw=True),
+                self.pa.load_hprd_ptms(return_raw=True),
+                self.pa.load_mimp_dmi(return_raw=True),
+                self.pa.load_pnetworks_dmi(return_raw=True),
+                self.pa.load_phosphoelm(return_raw=True),
+                self.pa.load_dbptm(return_raw=True),
+                self.pa.load_psite_phos(return_raw=True)
+            )
         
         for ksub in lKinSub:
-            tKs = (ksub.domain.protein, ksub.ptm.protein)
-            if tKs not in self.dPhosDb:
-                self.dPhosDb[tKs] = []
-            self.dPhosDb[tKs].append(ksub)
+            if ksub.ptm.protein not in self.dPhosDb:
+                self.dPhosDb[ksub.ptm.protein] = []
+            self.dPhosDb[ksub.ptm.protein].append(ksub)
+    
+    def load_seq(self):
+        """
+        Loads protein sequences from UniProt.
+        """
+        self.dSeq = pypath.uniprot_input.swissprot_seq(self.ncbi_tax_id,
+                                                       isoforms = True)
+    
+    def create_ptms(self):
+        """
+        Creates PTM objects for each PTM on array.
+        """
+        self.dAssaySub = {}
+        self.setSeqMismatch = set([])
+        self.setSeqMismatchName = set(map(lambda p: (p[1], p[3], p[4]),
+                                          self.aPsiteAnnot))
+        self.setSeqMismatchOrg = set([])
+        self.setSeqMismatchNameOrg = set(
+                                      filter(
+                                          lambda k:
+                                              self.ncbi_tax_id in self.dOrgSpec[k],
+                                            map(lambda p: (p[1], p[3], p[4]),
+                                                self.aPsiteAnnot)
+                                        ))
+        
+        self.dResUpdate = {}
+        
+        for psite in self.aPsiteAnnot:
+            
+            key = (psite[0], psite[3], psite[4])
+            nkey = (psite[1], psite[3], psite[4])
+            
+            # 
+            self.setSeqMismatch.add(key)
+            
+            if psite[0] in self.dSeq:
+                
+                for isof in self.dSeq[psite[0]].isoforms():
+                    
+                    resnum = psite[4]
+                    resaa = psite[3]
+                    
+                    if (psite[1], resnum) in self.dAssayRefCorrection and \
+                        self.ncbi_tax_id in self.dAssayRefCorrection[
+                        (psite[1], resnum)]:
+                        
+                        resaa, resnum = \
+                            self.dAssayRefCorrection[(psite[1], resnum)][
+                                self.ncbi_tax_id]
+                    
+                    if not self.dSeq[psite[0]].match(resaa,
+                                                     resnum, isoform = isof):
+                        resnum = psite[4] + 1
+                        if not self.flex_resnum or \
+                            not self.dSeq[psite[0]].match(resaa,
+                                                     resnum, isoform = isof):
+                            continue
+                        
+                    if self.dSeq[psite[0]].match(resaa,
+                                                     resnum, isoform = isof):
+                        
+                        # updating the residue number in array
+                        if resnum != psite[4]:
+                            self.dResUpdate[(psite[0], psite[4])] = \
+                                (psite[0], resnum)
+                            psite[4] = resnum
+                        
+                        res = pypath.intera.Residue(resnum,
+                                                    resaa,
+                                                    psite[0],
+                                                    isoform = isof)
+                        reg = self.dSeq[psite[0]].get_region(
+                            residue = resnum, flanking = 7, isoform = isof)
+                        mot = pypath.intera.Motif(psite[0], reg[0], reg[1],
+                                                  instance = reg[2],
+                                                  isoform = isof)
+                        ptm = pypath.intera.Ptm(psite[0],
+                                                residue = res,
+                                                motif = mot,
+                                                typ = 'phosphorylation',
+                                                isoform = isof)
+                        
+                        if psite[0] not in self.dAssaySub:
+                            self.dAssaySub[psite[0]] = []
+                        self.dAssaySub[psite[0]].append(ptm)
+                        
+                        # this matched once, so removed to
+                        self.setSeqMismatch.remove(key)
+                        if nkey in self.setSeqMismatchName:
+                            self.setSeqMismatchName.remove(nkey)
+                        if nkey in self.setSeqMismatchNameOrg:
+                            self.setSeqMismatchNameOrg.remove(nkey)
+                        
+                        break # process only the first matching isoform
+            
+            else:
+                sys.stdout.write('\t!! No sequence available for %s!\n' % \
+                    psite[0])
+            
+            if key in self.setSeqMismatch:
+                
+                # here the organism matches, but the sequence mismatches:
+                if self.ncbi_tax_id in self.dOrgSpec[nkey]:
+                    self.setSeqMismatchOrg.add(key)
+            
+        # updating residue numbers in all arrays:
+        # arrays
+        for a in [self.aSignalAnnot, self.aCvarAnnot, self.aNormAnnot]:
+            # rows
+            for r in a:
+                key = (r[0], r[4])
+                if key in self.dResUpdate:
+                    r[4] = self.dResUpdate[key][1]
+        
+        for k in list(self.dOrgSpecUniprot.keys()):
+            key = (k[0], k[2])
+            if key in self.dResUpdate:
+                self.dOrgSpecUniprot[(k[0], k[1], self.dResUpdate[key][1])] = \
+                    self.dOrgSpecUniprot[k]
+                del self.dOrgSpecUniprot[k]
+    
+    def ptms_lookup(self):
+        """
+        Looks up the PTMs on array in the databases data.
+        Creates list with kinase-substrate interactions
+        targeting the substrates on array.
+        """
+        self.dKinAssaySub = {}
+        self.dKinNum = {}
+        
+        for uniprot, ptms in iteritems(self.dAssaySub):
+            
+            if uniprot not in self.dKinAssaySub:
+                self.dKinAssaySub[uniprot] = []
+            
+            kss = self.dPhosDb[uniprot] if uniprot in self.dPhosDb else []
+            
+            for ptm in ptms:
+                
+                nKin = 0
+                for ks in kss:
+                    if ptm in ks:
+                        self.dKinAssaySub[uniprot].append(ks)
+                        nKin += 1
+                
+                self.dKinNum[(uniprot,
+                                ptm.residue.name,
+                                ptm.residue.number)] = nKin
+        
+        sys.stdout.write('\t:: Found %u kinase-substrate interactions for\n'\
+            '\t   %s phosphorylation sites.\n'\
+            '\t   %.02f kinase for one site in average.\n'\
+            '\t   For %u sites no kinase found.\n'\
+            '\t   Additional %u sites could not be found in UniProt sequences.\n'\
+            '\t   The total number of sites is %u.\n'\
+            '\t   %u of these sites should be valid for this organism, and\n'\
+            '\t   %u mismatches despite should match for this organism.\n'\
+            '\t   Excluding redundant combinations, overall %u sites mismatches.\n' % (
+                sum(map(len, self.dKinAssaySub.values())),
+                len(list(filter(bool, self.dKinNum.values()))),
+                np.mean(list(self.dKinNum.values())),
+                len(list(filter(lambda n: n == 0, self.dKinNum.values()))),
+                len(self.setSeqMismatch),
+                self.aPsiteAnnot.shape[0],
+                len(list(filter(lambda p:
+                                    self.ncbi_tax_id in \
+                                        self.dOrgSpecUniprot[(p[0], p[3], p[4])],
+                                    self.aPsiteAnnot))),
+                len(self.setSeqMismatchOrg),
+                len(self.setSeqMismatchNameOrg)
+            ))
+    
+    def collect_proteins(self):
+        """
+        Compiles a list of all kinases and substrates.
+        """
+        self.lAllProteins = set(self.dKinAssaySub.keys()) | \
+            set(
+                list(
+                    itertools.chain(
+                        *map(
+                            lambda kss:
+                                map(
+                                    lambda ks:
+                                        ks.domain.protein,
+                                    kss
+                                ),
+                            self.dKinAssaySub.values()
+                        )
+                    )
+                )
+            )
+    
+    def load_network(self, pfile = None):
+        if not pfile:
+            self.pa.load_omnipath()
+        else:
+            self.pa.init_network(pfile = pfile)
+        self.pa.get_directed()
+    
+    def get_network(self, keep_also = [], step1 = True,
+                    more_steps = None, sparsen = False):
+        """
+        Creates a subnetwork based on certain criteria.
+        
+        :param list keep_also: List of additional vertex names
+                               to include in core.
+        :param bool step1: Whether include not only direct
+                           links but one step indirect connections.
+        :param int more_steps: Include longer indirect connections. This
+                               param defines the number of mediator nodes.
+        """
+        if not hasattr(self, 'whole') or self.whole is None:
+            self.whole = self.pa.dgraph
+        
+        new = copy.deepcopy(self.whole)
+        self.pa.graph = new
+        self.pa.dgraph = new
+        self.pa.update_vname()
+        self.pa.update_vindex()
+        vids = dict(zip(new.vs['name'], range(new.vcount())))
+        keep = list(map(lambda u: vids[u],
+                    filter(lambda u: u in vids, self.lAllProteins)))
+        keep_also = list(map(lambda u: vids[u],
+                         filter(lambda u: u in vids, keep_also)))
+        all_to_keep = set(keep) | set(keep_also)
+        delete = set(range(new.vcount())) - all_to_keep
+        
+        keep_step1 = set([])
+        for vid in delete:
+            if len(set(self.pa.affected_by(vid)._vs) & all_to_keep):
+                if len(set(self.pa._affected_by(vid)._vs) & all_to_keep):
+                    keep_step1.add(vid)
+        
+        all_to_keep = all_to_keep | keep_step1
+        delete = delete - keep_step1
+        
+        if more_steps is not None:
+            
+            n1 = self.pa._neighborhood(all_to_keep, order = more_steps, mode = 'IN')
+            n2 = self.pa._neighborhood(all_to_keep, order = more_steps, mode = 'OUT')
+            
+            longer_paths = set(list(n1)) & set(list(n2))
+            
+            all_to_keep = all_to_keep | longer_paths
+            delete = delete - longer_paths
+        
+        self.pa.graph.delete_vertices(list(delete))
+        self.pa.update_vname()
+        self.pa.update_vindex()
+        
+        sys.stdout.write('\t:: Nodes: %u -> %u, edges: %u -> %u\n'\
+            '\t   Removed %u vertices and %u edges\n' % (
+                self.whole.vcount(),
+                self.pa.graph.vcount(),
+                self.whole.ecount(),
+                self.pa.graph.ecount(),
+                len(delete),
+                self.whole.ecount() - self.pa.graph.ecount()
+            ))
+        
+        if sparsen:
+            pass
+
+# At mouse:
+    #Found 1141 kinase-substrate interactions for
+    #234 phosphorylation sites.
+    #3.54 kinase for one site in average.
+    #For 85 sites no kinase found.
+    #Additional 353 sites could not be found in UniProt sequences.
+    #The total number of sites is 679.
+
+#At human:
+    #Found 10491 kinase-substrate interactions for
+    #495 phosphorylation sites.
+    #17.79 kinase for one site in average.
+    #For 73 sites no kinase found.
+    #Additional 103 sites could not be found in UniProt sequences.
+    #The total number of sites is 678.
+    
+    
+# Mouse strict:
+    #Found 1112 kinase-substrate interactions for
+    #228 phosphorylation sites.
+    #3.55 kinase for one site in average.
+    #For 82 sites no kinase found.
+    #Additional 315 sites could not be found in UniProt sequences.
+    #The total number of sites is 632.
+    #632 of these sites should be valud for this organism, and
+    #315 mismatches despite shold match for this organism.
