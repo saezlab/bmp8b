@@ -41,6 +41,7 @@ class Bmp8(object):
                  dirBase = '..',
                  fnIdMapping = 'PEX100_Layout.csv',
                  fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx',
+                 fnTable = 'bmp8.csv',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -53,6 +54,10 @@ class Bmp8(object):
         self.fnIdMapping = os.path.join(
             self.dirBase,
             fnIdMapping
+        )
+        self.fnTable = os.path.join(
+            self.dirBase,
+            fnTable
         )
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
@@ -214,6 +219,15 @@ class Bmp8(object):
         self.create_ptms()
         self.ptms_lookup()
     
+    def network(self, extra_proteins = [], edges_percentile = 50, pfile = None):
+        self.collect_proteins()
+        self.load_network(pfile = pfile)
+        self.get_network(keep_also = extra_proteins)
+        self.sparsen_network(perc = edges_percentile)
+    
+    def export_tables(self):
+        pass
+    
     def init_pypath(self):
         """
         Initializes a PyPath object for mapping and network building.
@@ -333,7 +347,7 @@ class Bmp8(object):
                     lambda l:
                         (
                             l[0],
-                            l[vcol:]
+                            list(map(float, l[vcol:]))
                         ),
                     filter(
                         lambda l:
@@ -813,6 +827,140 @@ class Bmp8(object):
                     self.dOrgSpecUniprot[k]
                 del self.dOrgSpecUniprot[k]
     
+    def export_table(self):
+        """
+        Export a table with number of kinases for each substrate PTM.
+        """
+        
+        def get_pratio(a, ckey, pkey, lnums, cnum):
+            return a[lnums[ckey],cnum] / a[lnums[pkey],cnum]
+        
+        self.lDataCols = [('Control', 0), ('BMP8b', 1), ('NE', 2), ('BMP8b_NE', 3)]
+        self.lTableHdr = ['uniprot', 'gsymbol', 'name', 'numof_kin', 'degree',
+                          'resaa', 'resnum', 'group',
+                          'std_gapdh', 'std_actin', 'std_pkc',
+                          'signal', 'ctrl_signal',
+                          'cv', 'ctrl_cv',
+                          'norm',
+                          'norm_actin',
+                          'norm_gapdh',
+                          'norm_pkc',
+                          'ctrl_norm',
+                          'ctrl_norm_actin',
+                          'ctrl_norm_gapdh',
+                          'ctrl_norm_pkc',
+                          'phos',
+                          'pratio', 'ctrl_pratio',
+                          'pratio_actin', 'ctrl_pratio_actin',
+                          'pratio_gapdh', 'ctrl_pratio_gapdh',
+                          'pratio_pkc', 'ctrl_pratio_pkc',
+                          'fc', 'fc_actin', 'fc_gapdh', 'fc_pkc']
+        llTable = []
+        dDataLnum = dict(map(lambda i: ((i[1][0], i[1][2], i[1][3], i[1][4]), i[0]), enumerate(self.aSignalAnnot)))
+        self.dDataLnum = dDataLnum
+        
+        std_actin = np.array(self.dStd['Signal']['Beta actin'])
+        std_actin = std_actin / std_actin.min()
+        std_gapdh = np.array(self.dStd['Signal']['GAPDH'])
+        std_gapdh = std_gapdh / std_gapdh.min()
+        std_pkc = np.array(self.dStd['Signal']['PKC pan activation site'])
+        std_pkc = std_pkc / std_pkc.min()
+        
+        # normalized to standard
+        self.aSignalActin = self.aSignalData / std_actin
+        self.aSignalGapdh = self.aSignalData / std_gapdh
+        self.aSignalPkc   = self.aSignalData / std_pkc
+        
+        # normalized to median
+        self.aSignalActinNorm = self.aSignalActin / np.median(self.aSignalActin, axis = 0)
+        self.aSignalGapdhNorm = self.aSignalGapdh / np.median(self.aSignalGapdh, axis = 0)
+        self.aSignalPkcNorm   = self.aSignalPkc   / np.median(self.aSignalPkc, axis = 0)
+        
+        for i, annot in enumerate(self.aPsiteAnnot):
+            uniprot = annot[0]
+            gss = self.pa.mapper.map_name(uniprot, 'uniprot', 'genesymbol', self.ncbi_tax_id)
+            genesymbol = gss[0] if len(gss) else uniprot
+            key = (uniprot, annot[3], annot[4])
+            pkey = (uniprot, 'Phospho', annot[3], annot[4])
+            ckey = (uniprot, 'Ab', '', annot[4])
+            degree = self.pa.graph.vs.select(name = uniprot)[0].degree() \
+                if uniprot in self.pa.graph.vs['name'] else 0
+            if key not in self.dKinNum:
+                continue
+            
+            ctrl_pratio = get_pratio(self.aSignalData, ckey, pkey, dDataLnum, 0)
+            
+            ctrl_pratio_actin = get_pratio(self.aSignalActinNorm, ckey,
+                                           pkey, dDataLnum, 0)
+            ctrl_pratio_gapdh = get_pratio(self.aSignalGapdhNorm, ckey,
+                                           pkey, dDataLnum, 0)
+            ctrl_pratio_pkc   = get_pratio(self.aSignalPkcNorm,   ckey,
+                                           pkey, dDataLnum, 0)
+            
+            for group, cnum in self.lDataCols:
+                pratio = get_pratio(self.aNormData, ckey, pkey, dDataLnum, cnum)
+                
+                pratio_actin = get_pratio(self.aSignalActinNorm, ckey, pkey,
+                                          dDataLnum, cnum)
+                pratio_gapdh = get_pratio(self.aSignalGapdhNorm, ckey, pkey,
+                                          dDataLnum, cnum)
+                pratio_pkc   = get_pratio(self.aSignalPkcNorm,   ckey, pkey,
+                                          dDataLnum, cnum)
+                
+                for dkey, phos in [(ckey, 'np'), (pkey, 'p')]:
+                    
+                    llTable.append(
+                        [
+                            uniprot,
+                            genesymbol,
+                            annot[1],
+                            '%u' % self.dKinNum[key],
+                            '%u' % degree,
+                            annot[3],
+                            '%u' % annot[4],
+                            group,
+                            '%.04f' % self.dStd['Signal'][
+                                'GAPDH'][cnum], # GAPDH standard
+                            '%.04f' % self.dStd['Signal'][
+                                'Beta actin'][cnum], # Actin standard
+                            '%.04f' % self.dStd['Signal'][
+                                'PKC pan activation site'][cnum], # PKC standard
+                            '%.04f' % self.aSignalData[dDataLnum[dkey],cnum], # signal
+                            '%.04f' % self.aSignalData[dDataLnum[dkey],0],
+                            '%.04f' % self.aCvarData[dDataLnum[dkey],cnum], # CV
+                            '%.04f' % self.aCvarData[dDataLnum[dkey],0],
+                            '%.04f' % self.aNormData[dDataLnum[dkey],cnum], # norm
+                            '%.04f' % self.aSignalActinNorm[dDataLnum[dkey],cnum],
+                            '%.04f' % self.aSignalGapdhNorm[dDataLnum[dkey],cnum],
+                            '%.04f' % self.aSignalPkcNorm[dDataLnum[dkey],cnum],
+                            '%.04f' % self.aNormData[dDataLnum[dkey],0],
+                            '%.04f' % self.aSignalActinNorm[dDataLnum[dkey],0],
+                            '%.04f' % self.aSignalGapdhNorm[dDataLnum[dkey],0],
+                            '%.04f' % self.aSignalPkcNorm[dDataLnum[dkey],0],
+                            phos,
+                            '%.04f' % pratio, # pratio
+                            '%.04f' % ctrl_pratio,
+                            '%.04f' % pratio_actin,
+                            '%.04f' % ctrl_pratio_actin,
+                            '%.04f' % pratio_gapdh,
+                            '%.04f' % ctrl_pratio_gapdh,
+                            '%.04f' % pratio_pkc,
+                            '%.04f' % ctrl_pratio_pkc,
+                            '%.04f' % (pratio / ctrl_pratio), # fold change
+                            '%.04f' % (ctrl_pratio_actin / pratio_actin),
+                            '%.04f' % (ctrl_pratio_gapdh / pratio_gapdh),
+                            '%.04f' % (ctrl_pratio_pkc / pratio_pkc)
+                            
+                        ]
+                    )
+        
+        self.llTable = llTable
+        self.sTable = '%s\n' % '\t'.join(self.lTableHdr)
+        self.sTable = '%s%s' % (self.sTable, '\n'.join(map(lambda l: '%s' % '\t'.join(l), self.llTable)))
+        
+        with open(self.fnTable, 'w') as f:
+            f.write(self.sTable)
+    
     def ptms_lookup(self):
         """
         Looks up the PTMs on array in the databases data.
@@ -891,9 +1039,10 @@ class Bmp8(object):
         else:
             self.pa.init_network(pfile = pfile)
         self.pa.get_directed()
+        del self.pa.dgraph.es['ptm']
     
     def get_network(self, keep_also = [], step1 = True,
-                    more_steps = None, sparsen = False):
+                    more_steps = None):
         """
         Creates a subnetwork based on certain criteria.
         
@@ -940,6 +1089,8 @@ class Bmp8(object):
             delete = delete - longer_paths
         
         self.pa.graph.delete_vertices(list(delete))
+        self.pa._directed = None
+        self.pa.dgraph = self.pa.graph
         self.pa.update_vname()
         self.pa.update_vindex()
         
@@ -952,33 +1103,82 @@ class Bmp8(object):
                 len(delete),
                 self.whole.ecount() - self.pa.graph.ecount()
             ))
+    
+    def sparsen_network(self, perc):
+        """
+        Removes a portion of the edges based on certain conditions.
         
-        if sparsen:
-            pass
-
-# At mouse:
-    #Found 1141 kinase-substrate interactions for
-    #234 phosphorylation sites.
-    #3.54 kinase for one site in average.
-    #For 85 sites no kinase found.
-    #Additional 353 sites could not be found in UniProt sequences.
-    #The total number of sites is 679.
-
-#At human:
-    #Found 10491 kinase-substrate interactions for
-    #495 phosphorylation sites.
-    #17.79 kinase for one site in average.
-    #For 73 sites no kinase found.
-    #Additional 103 sites could not be found in UniProt sequences.
-    #The total number of sites is 678.
-    
-    
-# Mouse strict:
-    #Found 1112 kinase-substrate interactions for
-    #228 phosphorylation sites.
-    #3.55 kinase for one site in average.
-    #For 82 sites no kinase found.
-    #Additional 315 sites could not be found in UniProt sequences.
-    #The total number of sites is 632.
-    #632 of these sites should be valud for this organism, and
-    #315 mismatches despite shold match for this organism.
+        """
+        
+        dens0 = self.pa.graph.density()
+        
+        if 'ptm' not in self.pa.graph.es.attributes() or \
+            max(map(len, self.pa.graph.es['ptm'])) == 0:
+            self.pa.load_ptms()
+        
+        assay_ptms = set(itertools.chain(*self.dKinAssaySub.values()))
+        
+        # edges between kinases and substrates in the assay
+        es_protected = list(filter(lambda e:
+                                        len(set(e['ptm']) & assay_ptms),
+                                    self.pa.graph.es))
+        
+        self.pa.graph.es['refxsrc'] = list(
+            np.array(list(map(len, self.pa.graph.es['references']))) * \
+            np.array(list(map(len, self.pa.graph.es['sources']))))
+        
+        self.pa.graph.es['sign'] = list(map(lambda e:
+                                        e['dirs'].is_stimulation() or \
+                                        e['dirs'].is_inhibition(),
+                                    self.pa.graph.es))
+        
+        self.pa.graph.es['nptm'] = list(map(len, self.pa.graph.es['ptm']))
+        
+        self.pa.graph.es['mindeg'] = list(map(lambda e: min(
+                                            self.pa.graph.vs[e.source].degree(),
+                                            self.pa.graph.vs[e.target].degree()),
+                                            self.pa.graph.es))
+        
+        self.pa.graph.es['weight'] = list(
+            (np.array(self.pa.graph.es['refxsrc']) + 1) * \
+            (np.array(self.pa.graph.es['sign'], dtype = np.int) + 1) * \
+            (np.array(self.pa.graph.es['nptm']) + 1) / \
+            np.array(self.pa.graph.es['mindeg']))
+        
+        cutoff = np.percentile(np.array(self.pa.graph.es['weight']), perc)
+        
+        delete = set(list(map(lambda e: e.index,
+                        filter(lambda e:
+                            e.index in es_protected or \
+                            e['weight'] < cutoff,
+                        self.pa.graph.es))))
+        
+        for v in self.pa.graph.vs:
+            this_es = list(itertools.chain(
+                self.pa.graph.es.select(_source = v.index),
+                self.pa.graph.es.select(_target = v.index)
+            ))
+            
+            eids = set(list(map(lambda e: e.index, this_es)))
+            
+            # if all edges of one node would be removed,
+            # we still keep the one with the highest weight
+            if len(eids - delete) == 0:
+                
+                maxweight = max(map(lambda e:
+                                        (e['weight'], e.index),
+                                    this_es),
+                                key = lambda i: i[0])[1]
+                
+                if maxweight in delete:
+                    delete.remove(maxweight)
+        
+        self.pa.graph.delete_edges(delete)
+        self.pa.update_vindex()
+        self.pa.update_vname()
+        
+        sys.stdout.write('\t:: Sparsening network: %u edges'\
+            ' removed, %u have been kept.\n'\
+            '\t   Density changed from %.04f to %.04f.\n' % \
+                (len(delete), self.pa.graph.ecount(),
+                 dens0, self.pa.graph.density()))
