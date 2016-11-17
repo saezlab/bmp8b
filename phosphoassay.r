@@ -263,3 +263,93 @@ theme(axis.title = element_text(size = 24),
       axis.text.y = element_blank())
 
 ggsave('gg_psite_dendro.pdf', device = cairo_pdf, width = 10, height = 49)
+
+###
+
+ggplot(data[data$phos=='p',], aes(log(pratio_actin), )) +
+geom_histogram(aes(y = ..density..), binwidth = 0.5) +
+geom_density(kernel = 'gaussian', adjust = 2.0) +
+facet_wrap(~ g) +
+xlab('Phosphorylation ratio (log)') +
+ylab('Frequency or density') +
+ggtitle('Phosphorylation ratios') +
+theme(axis.title = element_text(size = 24),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 21))
+
+ggsave('gg_phos_hist.pdf', device = cairo_pdf, width = 10, height = 10)
+
+###
+
+ggplot(data[data$phos=='p',], aes(fc_actin, )) +
+geom_histogram(aes(y = ..density..), binwidth = 0.125) +
+geom_density(kernel = 'gaussian', adjust = 2.0) +
+facet_wrap(~ g) +
+xlab('Fold changes') +
+ylab('Frequency or density') +
+ggtitle('Fold changes') +
+theme(axis.title = element_text(size = 24),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 21))
+
+ggsave('gg_fc_hist.pdf', device = cairo_pdf, width = 10, height = 10)
+
+###
+
+ggplot(data[data$phos=='p' & data$group == 'Control',], aes(numof_kin)) +
+geom_histogram(aes(y = ..density..), binwidth = 10) +
+geom_density(kernel = 'gaussian', adjust = 2.0) +
+#facet_wrap(~ g) +
+xlab('Number of kinases') +
+ylab('Frequency or density') +
+ggtitle('Number of kinases') +
+theme(axis.title = element_text(size = 24),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 21))
+
+ggsave('gg_nkin_hist.pdf', device = cairo_pdf, width = 10, height = 10)
+
+###
+
+ggplot(data[data$phos=='p' & data$group == 'Control',], aes(numof_kin)) +
+geom_histogram(aes(y = ..density..), binwidth = 10) +
+geom_density(kernel = 'gaussian', adjust = 2.0) +
+#facet_wrap(~ g) +
+xlab('Number of kinases') +
+ylab('Frequency or density') +
+ggtitle('Number of kinases') +
+theme(axis.title = element_text(size = 24),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 21))
+
+ggsave('gg_nkin_hist.pdf', device = cairo_pdf, width = 10, height = 10)
+
+###
+
+ggplot(data[data$phos=='p' & data$group == 'Control',], aes(degree)) +
+geom_histogram(aes(y = ..density..), binwidth = 3) +
+geom_density(kernel = 'gaussian', adjust = 2.0) +
+#facet_wrap(~ g) +
+xlab('Degree') +
+ylab('Frequency or density') +
+ggtitle('Degree in sparsened, directed network') +
+theme(axis.title = element_text(size = 24),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 21))
+
+ggsave('gg_deg_hist.pdf', device = cairo_pdf, width = 10, height = 10)
+
+###
+
+ggplot(data[data$phos=='p',], aes(cv)) +
+geom_histogram(aes(y = ..density..), binwidth = 0.05) +
+geom_density(kernel = 'gaussian', adjust = 2.0) +
+facet_wrap(~ g) +
+xlab('Coefficient of variation') +
+ylab('Frequency or density') +
+ggtitle('Coefficient of variation') +
+theme(axis.title = element_text(size = 24),
+      axis.text = element_text(size = 18),
+      plot.title = element_text(size = 21))
+
+ggsave('gg_cv_hist.pdf', device = cairo_pdf, width = 10, height = 10)
