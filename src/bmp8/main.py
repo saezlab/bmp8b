@@ -29,6 +29,8 @@ import xlrd
 import openpyxl
 
 import numpy as np
+import scipy as sp
+import scipy.stats as stats
 
 import pypath
 
@@ -41,27 +43,24 @@ class Bmp8(object):
                  dirBase = '..',
                  fnIdMapping = 'PEX100_Layout.csv',
                  fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx',
-                 fnTable = 'bmp8.csv',
+                 fnTable = 'bmp8_%s.csv',
+                 fnFcTable = 'fc_%s_%s.csv',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
         
         self.dirBase = dirBase
-        self.fnXlsFullData = os.path.join(
-            self.dirBase,
-            fnXlsFullData
-        )
-        self.fnIdMapping = os.path.join(
-            self.dirBase,
-            fnIdMapping
-        )
-        self.fnTable = os.path.join(
-            self.dirBase,
-            fnTable
-        )
+        
+        self.set_path(fnXlsFullData, 'fnXlsFullData')
+        self.set_path(fnIdMapping, 'fnIdMapping')
+        self.set_path(fnTable, 'fnTable')
+        self.set_path(fnFcTable, 'fnFcTable')
+        
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
+        
         self.reRes = re.compile(r'([A-Z]?[a-z]*)([0-9]+)')
+        
         self.dAaletters = {
             'Thr': 'T',
             'Tyr': 'Y',
@@ -228,6 +227,12 @@ class Bmp8(object):
     
     def export_tables(self):
         pass
+    
+    def set_path(self, fname, attr):
+        """
+        Sets the path to a file in basedir.
+        """
+        setattr(self, attr, os.path.join(self.dirBase, fname))
     
     def init_pypath(self):
         """
@@ -828,9 +833,12 @@ class Bmp8(object):
                     self.dOrgSpecUniprot[k]
                 del self.dOrgSpecUniprot[k]
     
-    def export_table(self):
+    def export_table(self, to_file = False):
         """
         Export a table with number of kinases for each substrate PTM.
+        The table will be saved into `aTable` attribute, which is an array.
+        
+        :param bool to_file: Whether to write table into file.
         """
         
         def get_pratio(a, ckey, pkey, lnums, cnum):
@@ -858,138 +866,348 @@ class Bmp8(object):
                           'pratio_pkc', 'ctrl_pratio_pkc',
                           'fc', 'fc_actin', 'fc_gapdh', 'fc_pkc'
                           ]
-        llTable = []
+        
+        self.lSingleTableHdr = [
+                          'uniprot', 'gsymbol', 'name',
+                          'numof_kin', 'degree',
+                          'resaa', 'resnum', 'group',
+                          'phos',
+                          'cv', 'ctrl_cv',
+                          'std_name',
+                          'std_signal',
+                          'norm',
+                          'ctrl',
+                          'sd_treat',
+                          'sd_ctrl',
+                          'pratio',
+                          'ctrl_pratio',
+                          'fc'
+                          ]
+        
+        # initializing data structures
+        ctrls = {
+            'actin': 'Beta actin',
+            'gapdh': 'GAPDH',
+            'pkc':   'PKC pan activation site'
+        }
+        
+        dllTable = {'none': [], 'actin': [], 'gapdh': [], 'pkc': []}
+        
+        self.daSignalNorm = {}
+        
+        self.daStd = {}
+        
         dDataLnum = dict(map(lambda i: ((i[1][0], i[1][2], i[1][3], i[1][4]), i[0]), enumerate(self.aSignalAnnot)))
         self.dDataLnum = dDataLnum
         
-        std_actin = np.array(self.dStd['Signal']['Beta actin'])
-        std_actin = std_actin / std_actin.min()
-        std_gapdh = np.array(self.dStd['Signal']['GAPDH'])
-        std_gapdh = std_gapdh / std_gapdh.min()
-        std_pkc = np.array(self.dStd['Signal']['PKC pan activation site'])
-        std_pkc = std_pkc / std_pkc.min()
+        # standards values normalized by their min
+        for stdshort in ctrls.keys():
+            
+            self.daStd[stdshort] = np.array(self.dStd['Signal'][ctrls[stdshort]])
+            self.daStd[stdshort] = (self.daStd[stdshort] /
+                                    self.daStd[stdshort].min())
         
         # normalized to standard
-        self.aSignalActin = self.aSignalData / std_actin
-        self.aSignalGapdh = self.aSignalData / std_gapdh
-        self.aSignalPkc   = self.aSignalData / std_pkc
+        for stdshort in ctrls.keys():
+            
+            #self.daSignalNorm[stdshort] = self.aSignalData / self.daStd[stdshort]
+            # normalized to median
+            self.daSignalNorm[stdshort] = self.aSignalData / np.median(self.aSignalData, axis = 0)
+            self.daSignalNorm[stdshort] = self.daSignalNorm[stdshort] / self.daStd[stdshort]
+            #self.daSignalNorm[stdshort] = (self.daSignalNorm[stdshort] /
+            #                               np.median(self.daSignalNorm[stdshort],
+            #                                         axis = 0))
         
-        # normalized to median
-        self.aSignalActinNorm = self.aSignalActin / np.median(self.aSignalActin, axis = 0)
-        self.aSignalGapdhNorm = self.aSignalGapdh / np.median(self.aSignalGapdh, axis = 0)
-        self.aSignalPkcNorm   = self.aSignalPkc   / np.median(self.aSignalPkc, axis = 0)
+        # degree of freedom
+        self.iDf = self.aPsiteAnnot.shape[0] - 1
         
         for i, annot in enumerate(self.aPsiteAnnot):
             
             uniprot = annot[0]
-            gss = self.pa.mapper.map_name(uniprot, 'uniprot', 'genesymbol', self.ncbi_tax_id)
+            gss = self.pa.mapper.map_name(uniprot, 'uniprot',
+                                          'genesymbol', self.ncbi_tax_id)
             genesymbol = gss[0] if len(gss) else uniprot
             key = (uniprot, annot[3], annot[4])
             pkey = (uniprot, 'Phospho', annot[3], annot[4])
             ckey = (uniprot, 'Ab', '', annot[4])
             degree = self.pa.graph.vs.select(name = uniprot)[0].degree() \
                 if uniprot in self.pa.graph.vs['name'] else 0
+            
             if key not in self.dKinNum:
                 continue
             
-            ctrl_pratio = get_pratio(self.aSignalData, ckey, pkey, dDataLnum, 0)
+            dCtrlPratio = {'none': get_pratio(self.aSignalData,
+                                              ckey, pkey, dDataLnum, 0)}
             
-            ctrl_pratio_actin = get_pratio(self.aSignalActinNorm, ckey,
-                                           pkey, dDataLnum, 0)
-            ctrl_pratio_gapdh = get_pratio(self.aSignalGapdhNorm, ckey,
-                                           pkey, dDataLnum, 0)
-            ctrl_pratio_pkc   = get_pratio(self.aSignalPkcNorm,   ckey,
-                                           pkey, dDataLnum, 0)
+            # phosphorylation ratios for each standards
+            for stdshort in ctrls.keys():
+                
+                dCtrlPratio[stdshort] = \
+                    get_pratio(self.daSignalNorm[stdshort],
+                               ckey, pkey, dDataLnum, 0)
             
             for group, cnum in self.lDataCols:
                 
-                pratio = get_pratio(self.aNormData, ckey, pkey, dDataLnum, cnum)
+                dPratio = {'none': get_pratio(self.aNormData,
+                                              ckey, pkey,
+                                              dDataLnum, cnum)}
                 
-                pratio_actin = get_pratio(self.aSignalActinNorm, ckey, pkey,
-                                          dDataLnum, cnum)
-                pratio_gapdh = get_pratio(self.aSignalGapdhNorm, ckey, pkey,
-                                          dDataLnum, cnum)
-                pratio_pkc   = get_pratio(self.aSignalPkcNorm,   ckey, pkey,
-                                          dDataLnum, cnum)
+                # phosphorylation ratios for each standards
+                for stdshort in ctrls.keys():
+                    
+                    dPratio[stdshort] = \
+                        get_pratio(self.daSignalNorm[stdshort],
+                                ckey, pkey, dDataLnum, cnum)
                 
                 for dkey, phos in [(ckey, 'np'), (pkey, 'p')]:
                     
-                    llTable.append(
-                        [
-                            uniprot,
-                            genesymbol,
-                            annot[1],
-                            self.dKinNum[key],
-                            degree,
-                            annot[3],
-                            annot[4],
-                            group,
-                            self.dStd['Signal'][
-                                'GAPDH'][cnum], # GAPDH standard
-                            self.dStd['Signal'][
-                                'Beta actin'][cnum], # Actin standard
-                            self.dStd['Signal'][
-                                'PKC pan activation site'][cnum], # PKC standard
+                    common_fields = [
+                        uniprot,
+                        genesymbol,
+                        annot[1],
+                        self.dKinNum[key],
+                        degree,
+                        annot[3],
+                        annot[4],
+                        group,
+                        phos,
+                        self.aCvarData[dDataLnum[dkey],cnum], # CV treatment
+                        self.aCvarData[dDataLnum[dkey],0]     # CV control
+                    ]
+                    
+                    dllTable['none'].append(
+                        common_fields + [
+                        
+                            'none', # name of the standard
+                            1.0,
                             self.aSignalData[dDataLnum[dkey],cnum], # signal
-                            self.aSignalData[dDataLnum[dkey],0],
-                            self.aCvarData[dDataLnum[dkey],cnum], # CV
-                            self.aCvarData[dDataLnum[dkey],0],
-                            self.aNormData[dDataLnum[dkey],cnum], # norm
-                            self.aSignalActinNorm[dDataLnum[dkey],cnum],
-                            self.aSignalGapdhNorm[dDataLnum[dkey],cnum],
-                            self.aSignalPkcNorm[dDataLnum[dkey],cnum],
-                            self.aNormData[dDataLnum[dkey],0],
-                            self.aSignalActinNorm[dDataLnum[dkey],0],
-                            self.aSignalGapdhNorm[dDataLnum[dkey],0],
-                            self.aSignalPkcNorm[dDataLnum[dkey],0],
-                            phos,
-                            pratio, # pratio
-                            ctrl_pratio,
-                            pratio_actin,
-                            ctrl_pratio_actin,
-                            pratio_gapdh,
-                            ctrl_pratio_gapdh,
-                            pratio_pkc,
-                            ctrl_pratio_pkc,
-                            (pratio / ctrl_pratio), # fold change
-                            (ctrl_pratio_actin / pratio_actin),
-                            (ctrl_pratio_gapdh / pratio_gapdh),
-                            (ctrl_pratio_pkc / pratio_pkc)
-                            
+                                                                    # in treat
+                            self.aSignalData[dDataLnum[dkey],0], # signal
+                                                                 # in control
+                            (self.aCvarData[dDataLnum[dkey],cnum] *
+                             self.aSignalData[dDataLnum[dkey],cnum]), # SD tr
+                            (self.aCvarData[dDataLnum[dkey],0] *
+                             self.aSignalData[dDataLnum[dkey],0]), # SD co
+                            dPratio['none'], # ratio of phosphorylated
+                            dCtrlPratio['none'], # r. of ph. in control
+                            dPratio['none'] / dCtrlPratio['none'] # FC
                         ]
                     )
+                    
+                    for stdshort, stdname in iteritems(ctrls):
+                        
+                        dllTable[stdshort].append(
+                            common_fields + [
+                                
+                                stdshort, # name of the standard
+                                self.dStd['Signal'][stdname][cnum], # standard
+                                                                    # signal
+                                self.daSignalNorm[stdshort][
+                                    dDataLnum[dkey],cnum], # signal in treat.
+                                self.daSignalNorm[stdshort][
+                                    dDataLnum[dkey],0], # signal in control
+                                (self.aCvarData[dDataLnum[dkey],cnum] *
+                                self.daSignalNorm[stdshort][
+                                    dDataLnum[dkey],cnum]), # SD tr
+                                (self.aCvarData[dDataLnum[dkey],0] *
+                                self.daSignalNorm[stdshort][
+                                    dDataLnum[dkey],0]), # SD co
+                                dPratio[stdshort], # ratio of phosphorylated
+                                dCtrlPratio[stdshort], # r. of ph. in control
+                                dPratio[stdshort] / dCtrlPratio[stdshort] # FC
+                            ]
+                        )
         
-        self.llTable = llTable
-        self.aTable = np.array(self.llTable)
+        self.dllTable = dllTable
+        
+        # make all to numpy array
+        for std in self.dllTable.keys():
+            
+            self.dllTable[std] = np.array(self.dllTable[std], dtype = np.object)
+        
+        self.daTable = self.dllTable
+        del self.dllTable
         
         # write the table to outfile
-        if tofile:
+        if to_file:
             
-            # convert each values to string
-            self.llsTable = \
-                list(
-                    map(
-                        lambda ls:
-                            list(
-                                map(
-                                    lambda v:
-                                        '%.04f' % v \
-                                            if type(v) is float \
-                                        else '%u' % v \
-                                            if type(v) is int \
-                                        else str(v),
-                                    ls
-                                )
-                            ),
-                            self.llTable
-                        )
-                    )
+            for std, arr in iteritems(self.daTable):
+                
+                fname = self.fnTable % std
+                
+                sys.stdout.write('\t:: Writing to `%s`.\n' % fname)
+                
+                self.table_to_file(arr, fname, self.lSingleTableHdr)
+    
+    @classmethod
+    def table_to_file(cls, arr, fname, hdr = None):
+        """
+        Writes contents of an array into file with header optionally.
+        """
+        
+        sTable = cls.array_to_string(arr, hdr)
+        
+        with open(fname, 'w') as fp:
             
-            self.sTable = '%s\n' % '\t'.join(self.lTableHdr)
-            self.sTable = '%s%s' % (self.sTable, '\n'.join(map(lambda l: '%s' % '\t'.join(l), self.llsTable)))
+            fp.write(sTable)
+    
+    @classmethod
+    def array_to_string(cls, arr, hdr = None):
+        """
+        Takes a numpy array and returns it as a string of tabular.
+        """
+        
+        sHdr = ''
+        
+        if hdr is not None:
             
-            with open(self.fnTable, 'w') as f:
-                f.write(self.sTable)
+            sHdr = '%s\n' % '\t'.join(hdr)
+        
+        lls = cls.array_to_lls(arr)
+        
+        sMain = '\n'.join(map(lambda row: '\t'.join(row), lls))
+        
+        return '%s%s' % (sHdr, sMain)
+    
+    @classmethod
+    def array_to_lls(cls, arr):
+        """
+        Converts numpy array to a list of lists of strings.
+        """
+        return \
+            list(
+                map(
+                    lambda row:
+                        list(
+                            map(
+                                cls.to_string,
+                                row
+                            )
+                        ),
+                    arr
+                )
+            )
+    
+    @classmethod
+    def to_string(cls, val):
+        """
+        Converts simple values to strings a uniform way.
+        """
+        return (
+                ('%.08f' % val)
+                    if type(val) is float
+                else ('%u' % val)
+                    if type(val) is int
+                else str(val)
+            )
+    
+    def export_fc_table(self, to_file = False):
+        """
+        Creates tables with fold changes, and exports to files optionally.
+        Calculates z-scores, p-values and t-values.
+        """
+        
+        daFcTable = {}
+        daUniqueFcTable = {}
+        
+        lHdr = [
+            'uniprot',
+            'genesymbol',
+            'name',
+            'resaa',
+            'resnum',
+            'fc',
+            'logfc',
+            'zscore',
+            'pval',
+            'tval'
+        ]
+        
+        for std, tbl in iteritems(self.daTable):
+            
+            daFcTable[std] = {}
+            
+            for treat in self.lDataCols:
+                
+                if treat[0] == 'Control':
+                    continue
+                
+                daFcTable[std][treat[0]] = []
+                
+                for it in tbl[np.where(np.logical_and(tbl[:,7] == treat[0],
+                                                      tbl[:,8] == 'p'))]:
+                    
+                    # uniprot, genesymbol, name, resaa, resnum, fold change
+                    daFcTable[std][treat[0]].append(
+                        [it[0], it[1], it[2], it[5], it[6], it[-1]])
+                
+                daFcTable[std][treat[0]] = np.array(daFcTable[std][treat[0]],
+                                                    dtype = np.object)
+                
+                logfc = np.log10(np.array(daFcTable[std][treat[0]][:,-1],
+                                          dtype = np.float64))
+                
+                sd = np.std(logfc)
+                
+                zscore = logfc / sd
+                
+                ndist = sp.stats.norm()
+                
+                pval = 2 * ndist.cdf(- np.abs(zscore))
+                
+                df = len(set(daFcTable[std][treat[0]][:,2])) - 1
+                
+                tdist = sp.stats.t(df)
+                
+                tval = tdist.ppf(pval)
+                
+                shape = [daFcTable[std][treat[0]].shape[0], 1]
+                
+                daFcTable[std][treat[0]] = \
+                    np.hstack((
+                        daFcTable[std][treat[0]],
+                        logfc.reshape(shape),
+                        zscore.reshape(shape),
+                        pval.reshape(shape),
+                        tval.reshape(shape)
+                    ))
+        
+        self.daFcTable = daFcTable
+        
+        # selecting the psite with lowest p-value for each protein
+        
+        for std, arrs in iteritems(self.daFcTable):
+            
+            daUniqueFcTable[std] = {}
+            
+            for tr, arr in iteritems(arrs):
+                
+                proteins = set(arr[:,0])
+                
+                daUniqueFcTable[std][tr] = []
+                
+                for protein in proteins:
+                    
+                    this_protein = arr[np.where(arr[:,0] == protein)]
+                    
+                    imin = np.argmin(this_protein[:,8])
+                    
+                    daUniqueFcTable[std][tr].append(this_protein[imin,:])
+                
+                daUniqueFcTable[std][tr] = np.vstack(daUniqueFcTable[std][tr])
+        
+        self.daUniqueFcTable = daUniqueFcTable
+        
+        if to_file:
+            
+            for std, arrs in iteritems(self.daUniqueFcTable):
+                
+                for tr, arr in iteritems(arrs):
+                    
+                    fname = self.fnFcTable % (tr, std)
+                    
+                    self.table_to_file(arr, fname, lHdr)
+    
     
     def ptms_lookup(self):
         """
