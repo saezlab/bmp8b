@@ -80,6 +80,8 @@ class Bmp8(object):
         self.standards = ['Beta actin', 'GAPDH', 'PKC pan activation site']
         self.dStd = {}
         
+        self.lDataCols = [('Control', 0), ('BMP8b', 1), ('NE', 2), ('BMP8b_NE', 3)]
+        
         self.dMissingHomologs = {
             'IKK-alpha': 'Q60680',
             'IKK-alpha/beta': 'Q60680',
@@ -166,8 +168,7 @@ class Bmp8(object):
             },
             ('JAK1', 1022): {
                 9606: ('Y', 1034),
-                10090: ('Y', 1033),
-                10116: ('Y', 1078)
+                10090: ('Y', 1033)
             },
             ('IkB-beta', 19): {
                 9606: ('S', 19)
@@ -835,8 +836,9 @@ class Bmp8(object):
         def get_pratio(a, ckey, pkey, lnums, cnum):
             return a[lnums[ckey],cnum] / a[lnums[pkey],cnum]
         
-        self.lDataCols = [('Control', 0), ('BMP8b', 1), ('NE', 2), ('BMP8b_NE', 3)]
-        self.lTableHdr = ['uniprot', 'gsymbol', 'name', 'numof_kin', 'degree',
+        self.lTableHdr = [
+                          'uniprot', 'gsymbol', 'name',
+                          'numof_kin', 'degree',
                           'resaa', 'resnum', 'group',
                           'std_gapdh', 'std_actin', 'std_pkc',
                           'signal', 'ctrl_signal',
@@ -854,7 +856,8 @@ class Bmp8(object):
                           'pratio_actin', 'ctrl_pratio_actin',
                           'pratio_gapdh', 'ctrl_pratio_gapdh',
                           'pratio_pkc', 'ctrl_pratio_pkc',
-                          'fc', 'fc_actin', 'fc_gapdh', 'fc_pkc']
+                          'fc', 'fc_actin', 'fc_gapdh', 'fc_pkc'
+                          ]
         llTable = []
         dDataLnum = dict(map(lambda i: ((i[1][0], i[1][2], i[1][3], i[1][4]), i[0]), enumerate(self.aSignalAnnot)))
         self.dDataLnum = dDataLnum
@@ -877,6 +880,7 @@ class Bmp8(object):
         self.aSignalPkcNorm   = self.aSignalPkc   / np.median(self.aSignalPkc, axis = 0)
         
         for i, annot in enumerate(self.aPsiteAnnot):
+            
             uniprot = annot[0]
             gss = self.pa.mapper.map_name(uniprot, 'uniprot', 'genesymbol', self.ncbi_tax_id)
             genesymbol = gss[0] if len(gss) else uniprot
@@ -898,6 +902,7 @@ class Bmp8(object):
                                            pkey, dDataLnum, 0)
             
             for group, cnum in self.lDataCols:
+                
                 pratio = get_pratio(self.aNormData, ckey, pkey, dDataLnum, cnum)
                 
                 pratio_actin = get_pratio(self.aSignalActinNorm, ckey, pkey,
@@ -914,52 +919,77 @@ class Bmp8(object):
                             uniprot,
                             genesymbol,
                             annot[1],
-                            '%u' % self.dKinNum[key],
-                            '%u' % degree,
+                            self.dKinNum[key],
+                            degree,
                             annot[3],
-                            '%u' % annot[4],
+                            annot[4],
                             group,
-                            '%.04f' % self.dStd['Signal'][
+                            self.dStd['Signal'][
                                 'GAPDH'][cnum], # GAPDH standard
-                            '%.04f' % self.dStd['Signal'][
+                            self.dStd['Signal'][
                                 'Beta actin'][cnum], # Actin standard
-                            '%.04f' % self.dStd['Signal'][
+                            self.dStd['Signal'][
                                 'PKC pan activation site'][cnum], # PKC standard
-                            '%.04f' % self.aSignalData[dDataLnum[dkey],cnum], # signal
-                            '%.04f' % self.aSignalData[dDataLnum[dkey],0],
-                            '%.04f' % self.aCvarData[dDataLnum[dkey],cnum], # CV
-                            '%.04f' % self.aCvarData[dDataLnum[dkey],0],
-                            '%.04f' % self.aNormData[dDataLnum[dkey],cnum], # norm
-                            '%.04f' % self.aSignalActinNorm[dDataLnum[dkey],cnum],
-                            '%.04f' % self.aSignalGapdhNorm[dDataLnum[dkey],cnum],
-                            '%.04f' % self.aSignalPkcNorm[dDataLnum[dkey],cnum],
-                            '%.04f' % self.aNormData[dDataLnum[dkey],0],
-                            '%.04f' % self.aSignalActinNorm[dDataLnum[dkey],0],
-                            '%.04f' % self.aSignalGapdhNorm[dDataLnum[dkey],0],
-                            '%.04f' % self.aSignalPkcNorm[dDataLnum[dkey],0],
+                            self.aSignalData[dDataLnum[dkey],cnum], # signal
+                            self.aSignalData[dDataLnum[dkey],0],
+                            self.aCvarData[dDataLnum[dkey],cnum], # CV
+                            self.aCvarData[dDataLnum[dkey],0],
+                            self.aNormData[dDataLnum[dkey],cnum], # norm
+                            self.aSignalActinNorm[dDataLnum[dkey],cnum],
+                            self.aSignalGapdhNorm[dDataLnum[dkey],cnum],
+                            self.aSignalPkcNorm[dDataLnum[dkey],cnum],
+                            self.aNormData[dDataLnum[dkey],0],
+                            self.aSignalActinNorm[dDataLnum[dkey],0],
+                            self.aSignalGapdhNorm[dDataLnum[dkey],0],
+                            self.aSignalPkcNorm[dDataLnum[dkey],0],
                             phos,
-                            '%.04f' % pratio, # pratio
-                            '%.04f' % ctrl_pratio,
-                            '%.04f' % pratio_actin,
-                            '%.04f' % ctrl_pratio_actin,
-                            '%.04f' % pratio_gapdh,
-                            '%.04f' % ctrl_pratio_gapdh,
-                            '%.04f' % pratio_pkc,
-                            '%.04f' % ctrl_pratio_pkc,
-                            '%.04f' % (pratio / ctrl_pratio), # fold change
-                            '%.04f' % (ctrl_pratio_actin / pratio_actin),
-                            '%.04f' % (ctrl_pratio_gapdh / pratio_gapdh),
-                            '%.04f' % (ctrl_pratio_pkc / pratio_pkc)
+                            pratio, # pratio
+                            ctrl_pratio,
+                            pratio_actin,
+                            ctrl_pratio_actin,
+                            pratio_gapdh,
+                            ctrl_pratio_gapdh,
+                            pratio_pkc,
+                            ctrl_pratio_pkc,
+                            (pratio / ctrl_pratio), # fold change
+                            (ctrl_pratio_actin / pratio_actin),
+                            (ctrl_pratio_gapdh / pratio_gapdh),
+                            (ctrl_pratio_pkc / pratio_pkc)
                             
                         ]
                     )
         
         self.llTable = llTable
-        self.sTable = '%s\n' % '\t'.join(self.lTableHdr)
-        self.sTable = '%s%s' % (self.sTable, '\n'.join(map(lambda l: '%s' % '\t'.join(l), self.llTable)))
+        self.aTable = np.array(self.llTable)
         
-        with open(self.fnTable, 'w') as f:
-            f.write(self.sTable)
+        # write the table to outfile
+        if tofile:
+            
+            # convert each values to string
+            self.llsTable = \
+                list(
+                    map(
+                        lambda ls:
+                            list(
+                                map(
+                                    lambda v:
+                                        '%.04f' % v \
+                                            if type(v) is float \
+                                        else '%u' % v \
+                                            if type(v) is int \
+                                        else str(v),
+                                    ls
+                                )
+                            ),
+                            self.llTable
+                        )
+                    )
+            
+            self.sTable = '%s\n' % '\t'.join(self.lTableHdr)
+            self.sTable = '%s%s' % (self.sTable, '\n'.join(map(lambda l: '%s' % '\t'.join(l), self.llsTable)))
+            
+            with open(self.fnTable, 'w') as f:
+                f.write(self.sTable)
     
     def ptms_lookup(self):
         """

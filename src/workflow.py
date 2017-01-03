@@ -4,5 +4,5 @@
 import bmp8
 import os
 
-b = bmp8.Bmp8()
-b.psites_diffs()
+b = bmp8.Bmp8(ncbi_tax_id = 9606)
+b.init()
