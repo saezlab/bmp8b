@@ -4,7 +4,7 @@
 #
 #  This file is part of the `bmp8` Python module
 #
-#  Copyright (c) 2016 - EMBL-EBI
+#  Copyright (c) 2016-2017 - EMBL-EBI
 #
 #  File author(s): Dénes Türei (turei.denes@gmail.com)
 #
@@ -29,10 +29,16 @@ import xlrd
 import openpyxl
 
 import numpy as np
+import pandas as pd
 import scipy as sp
 import scipy.stats as stats
 
 import pypath
+
+try:
+    import kinact
+except:
+    sys.stdout.write('\t:: No module `kinact` available.\n')
 
 if 'unicode' not in __builtins__:
     unicode = str
@@ -990,7 +996,7 @@ class Bmp8(object):
                              self.aSignalData[dDataLnum[dkey],0]), # SD co
                             dPratio['none'], # ratio of phosphorylated
                             dCtrlPratio['none'], # r. of ph. in control
-                            dPratio['none'] / dCtrlPratio['none'] # FC
+                            dPratio['none'] / dCtrlPratio['none'] - 1.0 # FC
                         ]
                     )
                     
@@ -1014,7 +1020,7 @@ class Bmp8(object):
                                     dDataLnum[dkey],0]), # SD co
                                 dPratio[stdshort], # ratio of phosphorylated
                                 dCtrlPratio[stdshort], # r. of ph. in control
-                                dPratio[stdshort] / dCtrlPratio[stdshort] # FC
+                                dPratio[stdshort] / dCtrlPratio[stdshort] - 1.0 # FC
                             ]
                         )
         
@@ -1430,3 +1436,144 @@ class Bmp8(object):
             '\t   Density changed from %.04f to %.04f.\n' % \
                 (len(delete), self.pa.graph.ecount(),
                  dens0, self.pa.graph.density()))
+    
+    def collect_participants(self,
+                             attr,
+                             get_participant = 'get_kinase_uniprot',
+                             type_filter = 'is_phosphorylation'):
+        """
+        Collects all kinases from the kinase-substrate interactions
+        loaded from databases. Creates a unique list and saves it to
+        attribute `attr`.
+        """
+        
+        get_participant = getattr(self, get_participant)
+        type_filter     = getattr(self, type_filter)
+        
+        setattr(self, attr,
+            list(
+                set(
+                    itertools.chain(
+                        *map(
+                            lambda kss:
+                                list(
+                                    map(
+                                        get_participant,
+                                        filter(
+                                            type_filter,
+                                            kss[1]
+                                        )
+                                    )
+                                ),
+                            iteritems(self.dPhosDb)
+                        )
+                    )
+                )
+            )
+        )
+    
+    @staticmethod
+    def get_kinase_uniprot(dommot):
+        """
+        Returns the UniProt of the kinase from a
+        pypath.intera.DomainMotif object.
+        """
+        return dommot.domain.protein
+    
+    @staticmethod
+    def is_phosphorylation(dommot):
+        """
+        Returns `True` if the type of an enzyme-substrate interaction
+        is `phosphorylation`.
+        """
+        return dommot.ptm.typ == 'phosphorylation'
+    
+    @staticmethod
+    def get_substrate_psite(dommot):
+        """
+        From a `pypath.intera.DomainMotif` object, gets the identity of
+        the phosphosite in a 'UniProt_[residue][number]' format.
+        """
+        return '%s_%s%u' % (dommot.ptm.protein,
+                            dommot.ptm.residue.name,
+                            dommot.ptm.residue.number)
+    
+    def kinase_psite_adj(self):
+        """
+        Creates and adjacency matrix of kinases and target phosphorylation
+        sites, based on database data. The matrix is a `pandas.DataFrame`
+        with values of 1.0 if the kinase phosphorylates the site otherwise
+        `numpy.nan` values. The matrix is saved into the `dfKinPsite`
+        attribute.
+        """
+        
+        nkin = len(self.lAllKinases)
+        npst = len(self.lAllPsites)
+        
+        self.dfKinPsite    = np.empty(shape = [npst, nkin])
+        self.dfKinPsite[:] = np.nan
+        self.dfKinPsite    = pd.DataFrame(self.dfKinPsite)
+        self.dfKinPsite.columns = self.lAllKinases
+        self.dfKinPsite.index   = self.lAllPsites
+        
+        for sub, kss in iteritems(self.dPhosDb):
+            
+            for ks in kss:
+                
+                if self.is_phosphorylation(ks):
+                    
+                    kin = self.get_kinase_uniprot(ks)
+                    psite = self.get_substrate_psite(ks)
+                    
+                    self.dfKinPsite.set_value(psite, kin, 1.0)
+    
+    def fc_data_frames(self, std = 'none', colname = '30min'):
+        """
+        Creates a `pandas.DataFrame` to serve as input for `kinact`.
+        Data frame contains phosphorylation sites and their fold changes.
+        """
+        
+        self.ddfFcData = {}
+        
+        for treatment, fctab in iteritems(self.daFcTable[std]):
+            
+            psites, fc = \
+                zip(
+                    *map(
+                        lambda row:
+                            (
+                                '%s_%s%u' % (row[0], row[3], row[4]), # psite
+                                row[5] # fold change
+                            ),
+                        fctab
+                    )
+                )
+            
+            self.ddfFcData[treatment] = pd.DataFrame(np.array(fc),
+                                                     index = psites,
+                                                     columns = [colname])
+    
+    def kinact_analysis(self, std = 'none'):
+        """
+        Sets up and runs kinase activity analysis with `kinact`.
+        Results saved to the `dddfKinactResult` attribute.
+        """
+        
+        self.dddfKinactResult = {}
+        
+        # collecting UniProts of all kinases
+        # and identities of all psites
+        self.collect_participants('lAllKinases')
+        self.collect_participants('lAllPsites', 'get_substrate_psite')
+        self.kinase_psite_adj()
+        self.fc_data_frames(std = std)
+        
+        for tr in self.daFcTable[std].keys():
+            
+            self.dddfKinactResult[tr] = {}
+            
+            self.dddfKinactResult[tr]['score'], self.dddfKinactResult[tr]['pval'] = \
+                kinact.ksea.ksea_mean(data_fc = self.ddfFcData[tr]['30min'].dropna(),
+                                         interactions = self.dfKinPsite,
+                                         mP = self.ddfFcData[tr]['30min'].values.mean(),
+                                         delta = self.ddfFcData[tr]['30min'].values.std())
