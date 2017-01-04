@@ -15,7 +15,8 @@ Installation
 Requirements
 ------------
 
-No requirements yet.
+Requires xlrd, openpyxl, numpy, scipy, pandas, pypath and optionally kinact.
+For the latter 2 see https://github.com/saezlab/.
 Should work under Linux, other Unix and Windows, both in Python 2 and 3.
 
 Quick start
@@ -24,6 +25,11 @@ Quick start
 .. code:: python
         
         import bmp8
+        b = bmp8.Bmp8(ncbi_tax_id = 9606)
+        b.init()
+        b.export_table(to_file = True)
+        b.export_fc_table(to_file = True)
+        b.kinact_analysis()
 
 Authors
 -------
