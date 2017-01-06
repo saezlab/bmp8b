@@ -45,12 +45,27 @@ if 'unicode' not in __builtins__:
 
 class Bmp8(object):
     
+    lFcTableHdr = [
+            'uniprot',
+            'genesymbol',
+            'name',
+            'resaa',
+            'resnum',
+            'fc',
+            'logfc',
+            'zscore',
+            'pval',
+            'tval'
+        ]
+    
     def __init__(self,
                  dirBase = '..',
                  fnIdMapping = 'PEX100_Layout.csv',
                  fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx',
                  fnTable = 'bmp8_%s.csv',
                  fnFcTable = 'fc_%s_%s.csv',
+                 fnFcTopTable = 'fctop_%s_%s.csv',
+                 fnFcTopCommon = 'fctop_%s.csv',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -61,6 +76,8 @@ class Bmp8(object):
         self.set_path(fnIdMapping, 'fnIdMapping')
         self.set_path(fnTable, 'fnTable')
         self.set_path(fnFcTable, 'fnFcTable')
+        self.set_path(fnFcTopTable, 'fnFcTopTable')
+        self.set_path(fnFcTopTable, 'fnFcTopCommon')
         
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
@@ -1140,19 +1157,6 @@ class Bmp8(object):
         daFcTable = {}
         daUniqueFcTable = {}
         
-        lHdr = [
-            'uniprot',
-            'genesymbol',
-            'name',
-            'resaa',
-            'resnum',
-            'fc',
-            'logfc',
-            'zscore',
-            'pval',
-            'tval'
-        ]
-        
         for std, tbl in iteritems(self.daTable):
             
             daFcTable[std] = {}
@@ -1238,14 +1242,23 @@ class Bmp8(object):
         
         if to_file:
             
-            for std, arrs in iteritems(self.daUniqueFcTable):
-                
-                for tr, arr in iteritems(arrs):
-                    
-                    fname = self.fnFcTable % (tr, std)
-                    
-                    self.table_to_file(arr, fname, lHdr)
+            self.fc_table_to_file()
     
+    def fc_table_to_file(self, unique = True):
+        """
+        Writes FC tables to files.
+        """
+        
+        daTable = self.daUniqueFcTable if unique else self.daFcTable
+        
+        for std, arrs in iteritems(daTable):
+            
+            for tr, arr in iteritems(arrs):
+                
+                fname = self.fnFcTable if unique else self.fnFcTopTable
+                fname = fname % (tr, std)
+                
+                self.table_to_file(arr, fname, self.lFcTableHdr)
     
     def ptms_lookup(self):
         """
@@ -1794,8 +1807,99 @@ class Bmp8(object):
                 fp.write('\n')
             
             fp.write('%s\n' % (rule * numtr * 3))
+        
+        if fname is not None:
             
-            if fname is not None:
-                
-                fp.close()
+            fp.close()
     
+    def fc_diff_table(self):
+        """
+        Orders proteins by fold change diff.
+        """
+        
+        for std in self.daFcTable.keys():
+            
+            tab = self.daFcTable[std]
+            
+            ordr = \
+                np.array(
+                    list(
+                        map(
+                            lambda it:
+                                it[0],
+                            sorted(
+                                map(
+                                    lambda i:
+                                        (
+                                            i,
+                                            max(
+                                                map(
+                                                    lambda tr:
+                                                        abs(
+                                                            tab[tr[0]][i,5] -
+                                                            np.sign(
+                                                                tab[tr[0]][i,5]
+                                                            ) - (
+                                                            tab[tr[1]][i,5] -
+                                                            np.sign(
+                                                                tab[tr[1]][i,5]
+                                                            )
+                                                            )
+                                                        ),
+                                                    itertools.combinations(
+                                                        tab.keys(),
+                                                        2
+                                                    )
+                                                )
+                                            )
+                                        ),
+                                    xrange(list(tab.values())[0].shape[0])
+                                ),
+                                key = lambda it: it[1],
+                                reverse = True
+                            )
+                        )
+                    )
+                )
+            
+            for tr in tab.keys():
+                
+                tab[tr] = tab[tr][ordr,:]
+        
+        self.fc_table_to_file(unique = False)
+    
+    def fc_top_table(self):
+        """
+        Writes FC values sorted by maximum difference into file.
+        """
+        
+        lHdr = ['uniprot', 'genesymbol', 'name', 'resaa', 'resnum', 'psite']
+        
+        self.daFcTop = {}
+        
+        self.fc_diff_table()
+        
+        trs = sorted(list(self.daFcTable.values())[0].keys())
+        
+        lHdr.extend(trs)
+        
+        for std, da in iteritems(self.daFcTable):
+            
+            ll = []
+            
+            for i in xrange(list(da.values())[0].shape[0]):
+                
+                row = list(list(da.values())[0][i,:5])
+                row.append('%s_%s%u' % (row[1], row[3], row[4]))
+                
+                for tr in trs:
+                    
+                    row.append(da[tr][i,5])
+                
+                ll.append(row)
+            
+            self.daFcTop[std] = np.array(ll, dtype = np.object)
+            
+            fname = self.fnFcTopCommon % std
+            
+            self.table_to_file(self.daFcTop[std], fname, lHdr)
