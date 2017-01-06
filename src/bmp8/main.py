@@ -996,7 +996,10 @@ class Bmp8(object):
                              self.aSignalData[dDataLnum[dkey],0]), # SD co
                             dPratio['none'], # ratio of phosphorylated
                             dCtrlPratio['none'], # r. of ph. in control
-                            dPratio['none'] / dCtrlPratio['none'] - 1.0 # FC
+                            self.fold_change(
+                                dPratio['none'],
+                                dCtrlPratio['none']
+                            ) # FC
                         ]
                     )
                     
@@ -1020,7 +1023,10 @@ class Bmp8(object):
                                     dDataLnum[dkey],0]), # SD co
                                 dPratio[stdshort], # ratio of phosphorylated
                                 dCtrlPratio[stdshort], # r. of ph. in control
-                                dPratio[stdshort] / dCtrlPratio[stdshort] - 1.0 # FC
+                                self.fold_change(
+                                    dPratio[stdshort],
+                                    dCtrlPratio[stdshort]
+                                )# FC
                             ]
                         )
         
@@ -1044,6 +1050,24 @@ class Bmp8(object):
                 sys.stdout.write('\t:: Writing to `%s`.\n' % fname)
                 
                 self.table_to_file(arr, fname, self.lSingleTableHdr)
+    
+    @staticmethod
+    def fold_change(val, ctrl):
+        """
+        Calculates the fold change as {value}/{control} if 
+        {control} < {value} and -1 * {control}/{value} otherwise.
+        """
+        return \
+            0.0 if val == ctrl \
+            else  val / ctrl if ctrl < val \
+            else -1 * ctrl / val
+    
+    @staticmethod
+    def log2_fold_change(fc):
+        """
+        Log2 transforms fold change value.
+        """
+        return 1.0 if fc == 0.0 else np.log2(fc) if fc > 0 else np.log2(-1 / fc)
     
     @classmethod
     def table_to_file(cls, arr, fname, hdr = None):
@@ -1150,8 +1174,16 @@ class Bmp8(object):
                 daFcTable[std][treat[0]] = np.array(daFcTable[std][treat[0]],
                                                     dtype = np.object)
                 
-                logfc = np.log10(np.array(daFcTable[std][treat[0]][:,-1],
-                                          dtype = np.float64))
+                logfc = \
+                    np.array(
+                        list(
+                            map(
+                                self.log2_fold_change,
+                                daFcTable[std][treat[0]][:,-1]
+                            )
+                        ),
+                        dtype = np.float64
+                    )
                 
                 sd = np.std(logfc)
                 
@@ -1437,6 +1469,16 @@ class Bmp8(object):
                 (len(delete), self.pa.graph.ecount(),
                  dens0, self.pa.graph.density()))
     
+    def collect_assay_psites(self):
+        """
+        Collects all phosphosites included in the assay.
+        Result saved to `setAssayPsites` attribute.
+        """
+        
+        aFc = list(list(self.daFcTable.values())[0].values())[0]
+        
+        self.setAssayPsites = set(list(map(self.psite_from_fc_row, aFc)))
+    
     def collect_participants(self,
                              attr,
                              get_participant = 'get_kinase_uniprot',
@@ -1505,7 +1547,13 @@ class Bmp8(object):
         with values of 1.0 if the kinase phosphorylates the site otherwise
         `numpy.nan` values. The matrix is saved into the `dfKinPsite`
         attribute.
+        This method also builds a dictionary of kinase-phosphosite
+        relationships which will be useful later to query the targets
+        of kinases.
         """
+        
+        self.dsetKinPsite    = {}
+        self.dsetKinAllPsite = {}
         
         nkin = len(self.lAllKinases)
         npst = len(self.lAllPsites)
@@ -1516,16 +1564,34 @@ class Bmp8(object):
         self.dfKinPsite.columns = self.lAllKinases
         self.dfKinPsite.index   = self.lAllPsites
         
+        self.collect_assay_psites()
+        
         for sub, kss in iteritems(self.dPhosDb):
             
             for ks in kss:
                 
                 if self.is_phosphorylation(ks):
                     
-                    kin = self.get_kinase_uniprot(ks)
+                    kin   = self.get_kinase_uniprot(ks)
                     psite = self.get_substrate_psite(ks)
                     
+                    if kin not in self.dsetKinPsite:
+                        self.dsetKinPsite[kin]    = set([])
+                        self.dsetKinAllPsite[kin] = set([])
+                    
                     self.dfKinPsite.set_value(psite, kin, 1.0)
+                    
+                    self.dsetKinAllPsite[kin].add(psite)
+                    
+                    if psite in self.setAssayPsites:
+                        self.dsetKinPsite[kin].add(psite)
+    
+    @staticmethod
+    def psite_from_fc_row(row):
+        """
+        Returns phosphosite string representation from a row of and FC array.
+        """
+        return '%s_%s%u' % (row[0], row[3], row[4])
     
     def fc_data_frames(self, std = 'none', colname = '30min'):
         """
@@ -1542,8 +1608,8 @@ class Bmp8(object):
                     *map(
                         lambda row:
                             (
-                                '%s_%s%u' % (row[0], row[3], row[4]), # psite
-                                row[5] # fold change
+                                self.psite_from_fc_row(row), # psite
+                                row[6] # fold change
                             ),
                         fctab
                     )
@@ -1559,7 +1625,8 @@ class Bmp8(object):
         Results saved to the `dddfKinactResult` attribute.
         """
         
-        self.dddfKinactResult = {}
+        self.dddfKseaResult      = {}
+        self.dddfNetworkinResult = {}
         
         # collecting UniProts of all kinases
         # and identities of all psites
@@ -1570,10 +1637,165 @@ class Bmp8(object):
         
         for tr in self.daFcTable[std].keys():
             
-            self.dddfKinactResult[tr] = {}
+            self.dddfKseaResult[tr] = {}
+            self.dddfNetworkinResult[tr] = {}
             
-            self.dddfKinactResult[tr]['score'], self.dddfKinactResult[tr]['pval'] = \
-                kinact.ksea.ksea_mean(data_fc = self.ddfFcData[tr]['30min'].dropna(),
-                                         interactions = self.dfKinPsite,
-                                         mP = self.ddfFcData[tr]['30min'].values.mean(),
-                                         delta = self.ddfFcData[tr]['30min'].values.std())
+            self.dddfKseaResult[tr]['score'], \
+            self.dddfKseaResult[tr]['pval'] = \
+                                              \
+                kinact.ksea.ksea_mean(
+                    data_fc = self.ddfFcData[tr]['30min'].dropna(),
+                    interactions = self.dfKinPsite,
+                    mP = self.ddfFcData[tr]['30min'].values.mean(),
+                    delta = self.ddfFcData[tr]['30min'].values.std())
+            
+            self.dddfNetworkinResult[tr]['score'], \
+            self.dddfNetworkinResult[tr]['pval'] = \
+                                                   \
+                kinact.networkin.weighted_mean(
+                    data_fc =self.ddfFcData[tr]['30min'].dropna(),
+                    interactions = self.dfKinPsite,
+                    mP = self.ddfFcData[tr]['30min'].values.mean(),
+                    delta = self.ddfFcData[tr]['30min'].values.std())
+    
+    def targets_of_kinase(self, kinase_uniprot, on_assay = True, uniprots = False):
+        """
+        Returns a set of one kinase's targets.
+        
+        :param str kinase_uniprot: The UniProt ID of the kinase.
+        :param bool on_assay: Return the targets only on the assay,
+                              or all from the databases.
+        :param bool uniprots: Return UniProts, or GeneSymbols otherwise.
+        """
+        
+        dsetKinPsite = self.dsetKinPsite if on_assay else self.dsetKinPsite
+        
+        setSubUniprots = set(map(lambda ps: ps.split('_')[0],
+                                 dsetKinPsite[kinase_uniprot]))
+        
+        if not uniprots:
+            
+            return \
+                set(
+                    itertools.chain(
+                        *map(
+                            lambda u:
+                                self.pa.mapper.map_name(u,
+                                                        'uniprot',
+                                                        'genesymbol',
+                                                        self.ncbi_tax_id),
+                            setSubUniprots
+                        )
+                    )
+                )
+        
+        return setSubUniprots
+    
+    def kinact_top(self, fname = None, threshold = 0.2):
+        """
+        Prints a table with top results from `kinact`.
+        """
+        
+        fp = sys.stdout if fname is None else open(fname, 'w')
+        
+        cwidth = 10
+        
+        empty = ' ' * (cwidth + 2)
+        rule  = '=' * (cwidth + 2)
+        
+        def cell(content):
+            if hasattr(content, 'ljust'):
+                return ' %s ' % content.ljust(cwidth)
+            if type(content).__name__[:5] == 'float':
+                content = '%.05f' % content
+            if type(content) is int:
+                content = '%u' % content
+            return ' %s ' % content.rjust(cwidth)
+        
+        for meth in ['Ksea', 'Networkin']:
+            
+            result = getattr(self, 'dddf%sResult' % meth)
+            
+            numtr  = len(result.keys())
+            
+            # header
+            fp.write('%s\n' % (rule * numtr * 3))
+            fp.write('%s\n' % meth)
+            fp.write('%s\n' % (rule * numtr * 3))
+            fp.write('%s\n' %
+                ''.join(
+                    list(
+                        map(
+                            lambda tr:
+                                '%s%s%s' % (
+                                    cell(tr), cell(empty), cell(empty)
+                                ),
+                            sorted(result.keys())
+                        )
+                    )
+                )
+            )
+            fp.write('%s\n' % (rule * numtr * 3))
+            fp.write('%s\n' %
+                ''.join([
+                    '%s%s%s' % (
+                        cell('Protein'),
+                        cell('Score'),
+                        cell('p-value')
+                    )
+                ] * numtr)
+            )
+            fp.write('%s\n' % (rule * numtr * 3))
+            
+            data = {}
+            
+            for tr in sorted(result.keys()):
+                
+                res  = result[tr]
+                ordr = res['pval'].argsort()
+                
+                data[tr] = \
+                    list(
+                        map(
+                            lambda i:
+                                (
+                                    self.pa.mapper.map_name(
+                                        res['pval'].index[i],
+                                        'uniprot',
+                                        'genesymbol',
+                                        self.ncbi_tax_id)[0],
+                                    res['score'][i],
+                                    res['pval'][i]
+                                ),
+                            filter(
+                                lambda i:
+                                    res['pval'][i] <= threshold,
+                                ordr
+                            )
+                        )
+                    )
+            
+            nrows = max(map(len, data.values()))
+            
+            for i in xrange(nrows):
+                
+                for tr in sorted(result.keys()):
+                    
+                    dat = data[tr]
+                    
+                    if i < len(dat):
+                        
+                        fp.write('%s%s%s' % tuple(map(cell, dat[i])))
+                    
+                    else:
+                        
+                        fp.write(empty * 3)
+                
+                fp.write('\n')
+            
+            fp.write('%s\n' % (rule * numtr * 3))
+            
+            if fname is not None:
+                
+                fp.close()
+    

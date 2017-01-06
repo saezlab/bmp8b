@@ -25,7 +25,7 @@ treatments <- c('NE', 'BMP8b', 'BMP8b_NE')
 datapath <- 'src/'
 gmtpath <- 'piano/'
 setsfpost <- 'v5.2.symbols.gmt'
-setspref <- c('c2.all', 'c2.cgp', 'c2.cp', 'c2.cp.kegg', 'c5.bp', 'h.all', 'c2.cp.reactome', 'c2.cp.biocarta')
+setspref <- c('c2.cp', 'c2.cp.kegg', 'c5.bp', 'h.all', 'c2.cp.reactome', 'c2.cp.biocarta')
 mapfile  <- 'uniprot_genesymbol.tab'
 result <- list()
 
