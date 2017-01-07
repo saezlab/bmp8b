@@ -32,6 +32,13 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import scipy.stats as stats
+import matplotlib as mpl
+import matplotlib.backends.backend_pdf
+
+try:
+    import matplotlib_venn as mplvenn
+except:
+    sys.stdout.write('\t:: No module `matplotlib_venn` available.\n')
 
 import pypath
 
@@ -865,7 +872,7 @@ class Bmp8(object):
         """
         
         def get_pratio(a, ckey, pkey, lnums, cnum):
-            return a[lnums[ckey],cnum] / a[lnums[pkey],cnum]
+            return a[lnums[pkey],cnum] / a[lnums[ckey],cnum]
         
         self.lTableHdr = [
                           'uniprot', 'gsymbol', 'name',
@@ -920,7 +927,9 @@ class Bmp8(object):
         
         self.daStd = {}
         
-        dDataLnum = dict(map(lambda i: ((i[1][0], i[1][2], i[1][3], i[1][4]), i[0]), enumerate(self.aSignalAnnot)))
+        dDataLnum = dict(map(lambda i:
+                                 ((i[1][0], i[1][2], i[1][3], i[1][4]), i[0]),
+                             enumerate(self.aSignalAnnot)))
         self.dDataLnum = dDataLnum
         
         # standards values normalized by their min
@@ -1903,3 +1912,143 @@ class Bmp8(object):
             fname = self.fnFcTopCommon % std
             
             self.table_to_file(self.daFcTop[std], fname, lHdr)
+    
+    def top_fc_venn(self, threshold = 1.5, fname = 'FC_Venn.pdf',
+                    sign = lambda s: s != 0,
+                    title = ''):
+        """
+        Creates a Venn diagram of the highest FCs by treatments.
+        """
+        
+        self.dsetTopFc = {}
+        plot = {}
+        
+        for tr, arr in iteritems(self.daUniqueFcTable['none']):
+            
+            self.dsetTopFc[tr] = \
+                set(arr[np.where(np.logical_and(np.abs(arr[:,5]) >= threshold,
+                                                sign(np.sign(arr[:,5]))))[0], 1])
+        
+        plot['pdf'] = mpl.backends.backend_pdf.PdfPages(fname)
+        plot['fig'] = mpl.figure.Figure(figsize = [12, 12])
+        plot['cvs'] = mpl.backends.backend_pdf.FigureCanvasPdf(plot['fig'])
+        plot['ax']  = plot['fig'].add_subplot(1, 1, 1)
+        
+        plot['venn'] = mplvenn.venn3(
+            subsets = list(map(lambda tr: self.dsetTopFc[tr],
+                               sorted(self.dsetTopFc.keys()))),
+            set_labels = sorted(self.dsetTopFc.keys()),
+            ax = plot['ax']
+        )
+        
+        # BMP8b
+        plot['venn'].get_label_by_id('100').set_text(
+            ', '.join(sorted(
+                self.dsetTopFc['BMP8b'] -
+                self.dsetTopFc['BMP8b_NE'] -
+                self.dsetTopFc['NE']
+            )))
+        plot['venn'].get_label_by_id('100').set_wrap(True)
+        plot['venn'].get_label_by_id('100').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#CC5555',
+            'boxstyle': 'round,pad=1'
+        })
+        
+        # NE
+        plot['venn'].get_label_by_id('001').set_text(
+            ', '.join(sorted(
+                self.dsetTopFc['NE'] -
+                self.dsetTopFc['BMP8b_NE'] -
+                self.dsetTopFc['BMP8b']
+            )))
+        plot['venn'].get_label_by_id('001').set_wrap(True)
+        plot['venn'].get_label_by_id('001').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#5555CC',
+            'boxstyle': 'round,pad=1'
+        })
+        
+        # BMP8b_NE
+        plot['venn'].get_label_by_id('010').set_text(
+            ', '.join(sorted(
+                self.dsetTopFc['BMP8b_NE'] -
+                self.dsetTopFc['NE'] -
+                self.dsetTopFc['BMP8b']
+            )))
+        plot['venn'].get_label_by_id('010').set_wrap(True)
+        plot['venn'].get_label_by_id('010').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#55AA55',
+            'boxstyle': 'round,pad=1'
+        })
+        
+        # BMP8b & BMP8b_NE
+        plot['venn'].get_label_by_id('110').set_text(
+            ', '.join(sorted(
+                (self.dsetTopFc['BMP8b'] &
+                self.dsetTopFc['BMP8b_NE']) -
+                self.dsetTopFc['NE']
+            )))
+        plot['venn'].get_label_by_id('110').set_wrap(True)
+        plot['venn'].get_label_by_id('110').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#C0A055',
+            'boxstyle': 'round,pad=1'
+        })
+        
+        # BMP8b & NE
+        plot['venn'].get_label_by_id('101').set_text(
+            ', '.join(sorted(
+                (self.dsetTopFc['BMP8b'] &
+                self.dsetTopFc['NE']) -
+                self.dsetTopFc['BMP8b_NE']
+            )))
+        plot['venn'].get_label_by_id('101').set_wrap(True)
+        plot['venn'].get_label_by_id('101').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#C044C0',
+            'boxstyle': 'round,pad=1'
+        })
+        pos = plot['venn'].get_label_by_id('101').get_position()
+        plot['venn'].get_label_by_id('101').set_position((pos[0], pos[1] - 0.05))
+        
+        # BMP8b_NE & NE
+        plot['venn'].get_label_by_id('011').set_text(
+            ', '.join(sorted(
+                (self.dsetTopFc['BMP8b_NE'] &
+                self.dsetTopFc['NE']) -
+                self.dsetTopFc['BMP8b']
+            )))
+        plot['venn'].get_label_by_id('011').set_wrap(True)
+        plot['venn'].get_label_by_id('011').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#44A0C0',
+            'boxstyle': 'round,pad=1'
+        })
+        
+        # BMP8b & NE & BMP8b_NE
+        plot['venn'].get_label_by_id('111').set_text(
+            ', '.join(sorted(
+                (self.dsetTopFc['BMP8b'] &
+                self.dsetTopFc['NE']) -
+                self.dsetTopFc['BMP8b_NE']
+            )))
+        plot['venn'].get_label_by_id('111').set_wrap(True)
+        plot['venn'].get_label_by_id('111').set_bbox({
+            'facecolor': 'none',
+            'edgecolor': '#A088A0',
+            'boxstyle': 'round,pad=1'
+        })
+        pos = plot['venn'].get_label_by_id('111').get_position()
+        plot['venn'].get_label_by_id('111').set_position((pos[0], pos[1] + 0.05))
+        
+        plot['ax'].set_title(title)
+        plot['fig'].tight_layout()
+        plot['fig'].subplots_adjust(top=0.92)
+        plot['cvs'].draw()
+        plot['cvs'].print_figure(plot['pdf'])
+        plot['pdf'].close()
+        plot['fig'].clf()
+        
+        self.plotVenn = plot
