@@ -84,7 +84,7 @@ class Bmp8(object):
         self.set_path(fnTable, 'fnTable')
         self.set_path(fnFcTable, 'fnFcTable')
         self.set_path(fnFcTopTable, 'fnFcTopTable')
-        self.set_path(fnFcTopTable, 'fnFcTopCommon')
+        self.set_path(fnFcTopCommon, 'fnFcTopCommon')
         
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')

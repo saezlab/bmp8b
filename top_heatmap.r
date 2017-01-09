@@ -6,7 +6,7 @@
 
 require(ggplot2)
 
-inFile <- 'src/fctop_none.csv'
+inFile <- 'fctop_none.csv'
 fctop <- read.table(inFile, header = TRUE, sep = '\t')
 
 fctop <- fctop[, names(fctop) != 'resnum']
