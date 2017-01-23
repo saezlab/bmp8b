@@ -58,6 +58,7 @@ class Bmp8(object):
             'name',
             'resaa',
             'resnum',
+            'label',
             'fc',
             'logfc',
             'zscore',
@@ -254,9 +255,6 @@ class Bmp8(object):
         self.load_network(pfile = pfile)
         self.get_network(keep_also = extra_proteins)
         self.sparsen_network(perc = edges_percentile)
-    
-    def export_tables(self):
-        pass
     
     def set_path(self, fname, attr):
         """
@@ -887,7 +885,7 @@ class Bmp8(object):
         self.lTableHdr = [
                           'uniprot', 'gsymbol', 'name',
                           'numof_kin', 'degree',
-                          'resaa', 'resnum', 'group',
+                          'resaa', 'resnum', 'group', 'label',
                           'std_gapdh', 'std_actin', 'std_pkc',
                           'signal', 'ctrl_signal',
                           'cv', 'ctrl_cv',
@@ -910,7 +908,7 @@ class Bmp8(object):
         self.lSingleTableHdr = [
                           'uniprot', 'gsymbol', 'name',
                           'numof_kin', 'degree',
-                          'resaa', 'resnum', 'group',
+                          'resaa', 'resnum', 'group', 'label',
                           'phos',
                           'cv', 'ctrl_cv',
                           'std_name',
@@ -1012,6 +1010,7 @@ class Bmp8(object):
                         annot[3],
                         annot[4],
                         group,
+                        self.antibody_id_to_name(annot[5]),
                         phos,
                         self.aCvarData[dDataLnum[dkey],cnum], # CV treatment
                         self.aCvarData[dDataLnum[dkey],0]     # CV control
@@ -1189,11 +1188,12 @@ class Bmp8(object):
                 daFcTable[std][treat[0]] = []
                 
                 for it in tbl[np.where(np.logical_and(tbl[:,7] == treat[0],
-                                                      tbl[:,8] == 'p'))]:
+                                                      tbl[:,9] == 'p'))]:
                     
-                    # uniprot, genesymbol, name, resaa, resnum, fold change
+                    # uniprot, genesymbol, name,
+                    # resaa, resnum, label, fold change
                     daFcTable[std][treat[0]].append(
-                        [it[0], it[1], it[2], it[5], it[6], it[-1]])
+                        [it[0], it[1], it[2], it[5], it[6], it[8], it[-1]])
                 
                 daFcTable[std][treat[0]] = np.array(daFcTable[std][treat[0]],
                                                     dtype = np.object)
@@ -1252,7 +1252,7 @@ class Bmp8(object):
                     
                     this_protein = arr[np.where(arr[:,0] == protein)]
                     
-                    imin = np.argmin(this_protein[:,8])
+                    imin = np.argmin(this_protein[:,9])
                     
                     daUniqueFcTable[std][tr].append(this_protein[imin,:])
                 
