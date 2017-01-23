@@ -15,11 +15,11 @@ fctop <- fctop[, names(fctop) != 'resnum']
 
 fctop.m <- melt(fctop)
 
-fctop.m$psite <- factor(fctop$psite, levels = unique(as.character(fctop$psite)))
+fctop.m$label <- factor(fctop$label, levels = unique(as.character(fctop$label)))
 
 fctop.m['logfc'] <- sign(fctop.m$value) * log2(abs(fctop.m$value)) / max(log2(abs(fctop.m$value)))
 
-p <- ggplot(fctop.m, aes(variable, psite)) +
+p <- ggplot(fctop.m, aes(variable, label)) +
     geom_tile(aes(fill = logfc)) +
     scale_fill_gradient2(low = 'orangered3', mid = 'white', high = 'steelblue') +
     xlab('Treatment') +

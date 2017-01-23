@@ -23,6 +23,7 @@ import sys
 import imp
 import re
 import itertools
+import collections
 import copy
 
 import xlrd
@@ -1245,6 +1246,7 @@ class Bmp8(object):
             for tr, arr in iteritems(arrs):
                 
                 proteins = set(arr[:,0])
+                antibodies = set([])
                 
                 daUniqueFcTable[std][tr] = []
                 
@@ -1254,7 +1256,10 @@ class Bmp8(object):
                     
                     imin = np.argmin(this_protein[:,9])
                     
-                    daUniqueFcTable[std][tr].append(this_protein[imin,:])
+                    # avoid duplicates -- only one per antibody
+                    if this_protein[imin, 5] not in antibodies:
+                        daUniqueFcTable[std][tr].append(this_protein[imin,:])
+                        antibodies.add(this_protein[imin, 5])
                 
                 daUniqueFcTable[std][tr] = np.vstack(daUniqueFcTable[std][tr])
         
@@ -1856,13 +1861,13 @@ class Bmp8(object):
                                                 map(
                                                     lambda tr:
                                                         abs(
-                                                            tab[tr[0]][i,5] -
+                                                            tab[tr[0]][i,6] -
                                                             np.sign(
-                                                                tab[tr[0]][i,5]
+                                                                tab[tr[0]][i,6]
                                                             ) - (
-                                                            tab[tr[1]][i,5] -
+                                                            tab[tr[1]][i,6] -
                                                             np.sign(
-                                                                tab[tr[1]][i,5]
+                                                                tab[tr[1]][i,6]
                                                             )
                                                             )
                                                         ),
@@ -1893,7 +1898,8 @@ class Bmp8(object):
         Writes FC values sorted by maximum difference into file.
         """
         
-        lHdr = ['uniprot', 'genesymbol', 'name', 'resaa', 'resnum', 'psite']
+        lHdr = ['uniprot', 'genesymbol', 'name',
+                'resaa', 'resnum', 'label', 'psite']
         
         self.daFcTop = {}
         
@@ -1909,12 +1915,12 @@ class Bmp8(object):
             
             for i in xrange(list(da.values())[0].shape[0]):
                 
-                row = list(list(da.values())[0][i,:5])
+                row = list(list(da.values())[0][i,:6])
                 row.append('%s_%s%u' % (row[1], row[3], row[4]))
                 
                 for tr in trs:
                     
-                    row.append(da[tr][i,5])
+                    row.append(da[tr][i,6])
                 
                 ll.append(row)
             
@@ -2069,14 +2075,68 @@ class Bmp8(object):
         For one antibody ID returns the protein names and residues
         as a human readable name.
         """
+        regsymbol = re.compile(r'([A-Z0-9]*?)([0-9]*[A-Z]?$)')
+        repost = re.compile(r'([0-9]*)([A-Z]*)')
+        
+        def shorten_protein_names(proteins):
+            gsymbols = \
+                list(
+                    map(
+                        lambda gs:
+                            regsymbol.match(gs).groups(),
+                        proteins
+                    )
+                )
+            
+            stems = collections.Counter(map(lambda gs: gs[0], gsymbols))
+            
+            short = (
+                '/'.join(
+                    sorted(
+                        map(
+                            lambda gss:
+                                '%s%s%s%s' % (
+                                    gss,
+                                    '[' if stems[gss] > 1 else '',
+                                    ','.join(
+                                        sorted(
+                                            list(
+                                                map(
+                                                    lambda gs:
+                                                        gs[1],
+                                                    filter(
+                                                        lambda gs:
+                                                            gs[0] == gss,
+                                                        gsymbols
+                                                    )
+                                                )
+                                            ),
+                                            key = lambda post:
+                                                (
+                                                    int(repost.match(post).group(1))
+                                                    if repost.match(post).group(1).isdigit() else 0,
+                                                    repost.match(post).group(2)
+                                                )
+                                        )
+                                    ),
+                                    ']' if stems[gss] > 1 else ''
+                                ),
+                            sorted(stems.keys())
+                        )
+                    )
+                )
+            )
+            
+            return 'Histone H3' if short[:2] == 'H3' else short
+        
         proteins, psites = \
-            tuple(
+            list(
                 zip(
                     *map(
                         lambda ps:
                             (
                                 self.pa.mapper.map_name(ps[0], 'uniprot', 'genesymbol',
-                                                        ncbi_tax_id = self.ncbi_tax_id)[0],
+                                                        ncbi_tax_id = self.ncbi_tax_id),
                                 (ps[3], ps[4])
                             ),
                         self.aPsiteAnnot[np.where(self.aPsiteAnnot[:,5] == aid)]
@@ -2086,7 +2146,7 @@ class Bmp8(object):
         
         return (
             '%s-%s' % (
-                '/'.join(sorted(set(proteins))),
+                shorten_protein_names(set(itertools.chain(*proteins))),
                 '/'.join(
                     map(
                         lambda ps:
