@@ -496,7 +496,10 @@ class Bmp8(object):
                                     itertools.chain(
                                         *map(
                                             # iterate rows
-                                            lambda ll:
+                                            # here one row is one antibody
+                                            # with enumerate we get an
+                                            # unique ID for each antibody
+                                            lambda ill:
                                                 list(
                                                     itertools.chain(
                                                         *map(
@@ -508,35 +511,42 @@ class Bmp8(object):
                                                                             # annotation
                                                                             [
                                                                                 u,
-                                                                                ll[0][0],
-                                                                                ll[0][1],
+                                                                                ill[1][0][0],
+                                                                                ill[1][0][1],
                                                                                 res[0],
-                                                                                res[1]
+                                                                                res[1],
+                                                                                ill[0] # the antibody ID
                                                                             ],
                                                                             # values
-                                                                            ll[1]
+                                                                            ill[1][1]
                                                                         ),
-                                                                    self.dNamesUniprots[ll[0][0]]
+                                                                    # one name might be mapped to
+                                                                    # multiple UniProt IDs
+                                                                    self.dNamesUniprots[ill[1][0][0]]
                                                                 ),
-                                                            self.get_residues(ll[0][2])
+                                                            # one antibody might detect multiple
+                                                            # phosphorylations
+                                                            self.get_residues(ill[1][0][2])
                                                         )
                                                     )
                                                 ),
-                                            map(
-                                                # for each row, match annotation
-                                                # and convert data to float
-                                                lambda l:
-                                                    (
-                                                        self.reAnnot.\
-                                                            match(l[0]).groups(0),
-                                                        list(map(float, l[vcol:]))
-                                                    ),
-                                                # starting from list of lists
-                                                filter(
-                                                    # filter standards
+                                            enumerate(
+                                                map(
+                                                    # for each row, match annotation
+                                                    # and convert data to float
                                                     lambda l:
-                                                        l[0] not in self.standards,
-                                                    llTable
+                                                        (
+                                                            self.reAnnot.\
+                                                                match(l[0]).groups(0),
+                                                            list(map(float, l[vcol:]))
+                                                        ),
+                                                    # starting from list of lists
+                                                    filter(
+                                                        # filter standards
+                                                        lambda l:
+                                                            l[0] not in self.standards,
+                                                        llTable
+                                                    )
                                                 )
                                             )
                                         )
@@ -2053,3 +2063,39 @@ class Bmp8(object):
         plot['fig'].clf()
         
         self.plotVenn = plot
+    
+    def antibody_id_to_name(self, aid):
+        """
+        For one antibody ID returns the protein names and residues
+        as a human readable name.
+        """
+        proteins, psites = \
+            tuple(
+                zip(
+                    *map(
+                        lambda ps:
+                            (
+                                self.pa.mapper.map_name(ps[0], 'uniprot', 'genesymbol',
+                                                        ncbi_tax_id = self.ncbi_tax_id)[0],
+                                (ps[3], ps[4])
+                            ),
+                        self.aPsiteAnnot[np.where(self.aPsiteAnnot[:,5] == aid)]
+                    )
+                )
+            )
+        
+        return (
+            '%s-%s' % (
+                '/'.join(sorted(set(proteins))),
+                '/'.join(
+                    map(
+                        lambda ps:
+                            '%s%u' % ps,
+                        sorted(
+                            set(psites),
+                            key = lambda ps: ps[1]
+                        )
+                    )
+                )
+            )
+        )
