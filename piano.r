@@ -28,6 +28,7 @@ setsfpost <- 'v5.2.symbols.gmt'
 setspref <- c('c2.cp', 'c2.cp.kegg', 'c5.bp', 'h.all', 'c2.cp.reactome', 'c2.cp.biocarta')
 mapfile  <- 'uniprot_genesymbol.tab'
 result <- list()
+filespath <- ''
 
 for(setpref in setspref){
     

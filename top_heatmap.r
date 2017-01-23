@@ -5,6 +5,8 @@
 #
 
 require(ggplot2)
+require(reshape2)
+require(ggdendro)
 
 inFile <- 'fctop_none.csv'
 fctop <- read.table(inFile, header = TRUE, sep = '\t')
@@ -36,6 +38,14 @@ ggsave('gg_fcdiff_top_heatmap.pdf', device = cairo_pdf, width = 4, height = 48)
 # Only top 50:
 
 fctop50 <- head(fctop, 111)
+rnames <- fctop50$psite
+rownames(fctop50) <- rnames
+mfctop50 <- as.matrix(fctop50[,6:8])
+rownames(mfctop50) <- rnames
+psites_dendro <- as.dendrogram(hclust(dist(mfctop50)))
+ordr <- order.dendrogram(psites_dendro)
+ofctop50 <- fctop50[ordr,]
+onames <- attr(ofctop50, 'dimnames')
 
 fctop.m <- melt(fctop50)
 
@@ -58,3 +68,6 @@ theme(
     )
 
 ggsave('gg_fcdiff_top50_heatmap.pdf', device = cairo_pdf, width = 6, height = 14)
+
+### top heatmap with dendrogram
+

@@ -1005,6 +1005,7 @@ class Bmp8(object):
                         phos,
                         self.aCvarData[dDataLnum[dkey],cnum], # CV treatment
                         self.aCvarData[dDataLnum[dkey],0]     # CV control
+                        # 10 (index)
                     ]
                     
                     dllTable['none'].append(
