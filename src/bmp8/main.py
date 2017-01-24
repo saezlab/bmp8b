@@ -94,6 +94,7 @@ class Bmp8(object):
         
         self.reRes  = re.compile(r'([A-Z]?[a-z]*)([0-9]+)')
         self.reORes = re.compile(r'[A-Za-z]{0,3}([/0-9]+)+')
+        self.rePsite = re.compile(r'([A-Z0-9]+)_([A-Z])([0-9]+)')
         
         self.dAaletters = {
             'Thr': 'T',
@@ -1680,7 +1681,7 @@ class Bmp8(object):
                         lambda row:
                             (
                                 self.psite_from_fc_row(row), # psite
-                                row[6] # fold change
+                                row[8] # fold change
                             ),
                         fctab
                     )
@@ -1761,6 +1762,46 @@ class Bmp8(object):
                 )
         
         return setSubUniprots
+    
+    def psite_kinase_adj(self, regenerate = False):
+        """
+        Creates a dict between psites and kinases.
+        This is for the opposite way lookup as `dsetKinPsite`.
+        """
+        
+        if hasattr(self, 'dsetPsiteKin') and not regenerate:
+            return None
+        
+        self.dsetPsiteKin = {}
+        
+        for kinase, psites in iteritems(self.dsetKinPsite):
+            
+            for psite in psites:
+                
+                tPsite = self.rePsite.match(psite).groups()
+                
+                if tPsite not in self.dsetPsiteKin:
+                    self.dsetPsiteKin[tPsite] = set([])
+                
+                self.dsetPsiteKin[tPsite].add(kinase)
+    
+    def kinases_of_substrate(self, substrate, residue = None, offset = None):
+        """
+        Returns the kinases of a substrate.
+        """
+        
+        self.psite_kinase_adj()
+        
+        if residue is None and offset is None:
+            mPsite = self.rePsite.match(substrate)
+            if mPsite is None:
+                sys.stdout.write('\t:: Could not determine residue and number.\n')
+                return set([])
+            psite = mPsite.groups()
+        else:
+            psite = (substrate, residue, offset)
+        
+        return self.dsetPsiteKin[psite] if psite in self.dsetPsiteKin else set([])
     
     def kinact_top(self, fname = None, threshold = 0.2):
         """
@@ -2206,3 +2247,18 @@ class Bmp8(object):
         )
     
     ### Direct functional annotation
+    #
+    # Categories and parent terms:
+    #
+    # -- angiogenesis: GO:0001525
+    # -- neurogenesis: GO:0022008
+    #                  GO:0038179 (neurotrophin signaling pathway)
+    # -- inflammation: GO:0006954
+    # -- lipid metabolism: GO:0006629 or
+    #                      GO:0044255 (cellular lipid metabolic process) or
+    #                      GO:0045444 (fat cell differentiation)
+    # -- survival, cell cycle: GO:0010941 (regulation of cell death) or
+    #                          GO:0007049 (cell cycle)
+    #
+    
+    
