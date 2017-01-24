@@ -91,7 +91,8 @@ class Bmp8(object):
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
         
-        self.reRes = re.compile(r'([A-Z]?[a-z]*)([0-9]+)')
+        self.reRes  = re.compile(r'([A-Z]?[a-z]*)([0-9]+)')
+        self.reORes = re.compile(r'[A-Za-z]{0,3}([/0-9]+)')
         
         self.dAaletters = {
             'Thr': 'T',
@@ -514,7 +515,12 @@ class Bmp8(object):
                                                                                 ill[1][0][1],
                                                                                 res[0],
                                                                                 res[1],
-                                                                                ill[0] # the antibody ID
+                                                                                ill[0], # the antibody ID
+                                                                                self.reORes.match(ill[1][0][2]).group(1) 
+                                                                                # the original residue numbers
+                                                                                # sometimes these are needed for
+                                                                                # an unambiguous identification
+                                                                                # of the antibodies
                                                                             ],
                                                                             # values
                                                                             ill[1][1]
@@ -875,7 +881,8 @@ class Bmp8(object):
     def export_table(self, to_file = False):
         """
         Export a table with number of kinases for each substrate PTM.
-        The table will be saved into `aTable` attribute, which is an array.
+        The table will be saved into `daTable` attribute, which is a
+        dict of arrays.
         
         :param bool to_file: Whether to write table into file.
         """
@@ -975,6 +982,8 @@ class Bmp8(object):
                 if uniprot in self.pa.graph.vs['name'] else 0
             
             if key not in self.dKinNum:
+                # this verifies that the phosphorylated residue
+                # has been found in the UniProt sequence
                 continue
             
             dCtrlPratio = {'none': get_pratio(self.aSignalData,
@@ -1893,7 +1902,7 @@ class Bmp8(object):
         
         self.fc_table_to_file(unique = False)
     
-    def fc_top_table(self):
+    def fc_top_table(self, unique = True):
         """
         Writes FC values sorted by maximum difference into file.
         """
@@ -1905,11 +1914,12 @@ class Bmp8(object):
         
         self.fc_diff_table()
         
-        trs = sorted(list(self.daFcTable.values())[0].keys())
+        fctab = self.daUniqueFcTable if unique else self.daFcTable
+        trs   = sorted(list(fctab.values())[0].keys())
         
         lHdr.extend(trs)
         
-        for std, da in iteritems(self.daFcTable):
+        for std, da in iteritems(fctab):
             
             ll = []
             
@@ -2078,6 +2088,9 @@ class Bmp8(object):
         regsymbol = re.compile(r'([A-Z0-9]*?)([0-9]*[A-Z]?$)')
         repost = re.compile(r'([0-9]*)([A-Z]*)')
         
+        if type(aid) is int:  aid = [aid]
+        if type(aid) is list: aid = np.array(aid)
+        
         def shorten_protein_names(proteins):
             gsymbols = \
                 list(
@@ -2139,7 +2152,7 @@ class Bmp8(object):
                                                         ncbi_tax_id = self.ncbi_tax_id),
                                 (ps[3], ps[4])
                             ),
-                        self.aPsiteAnnot[np.where(self.aPsiteAnnot[:,5] == aid)]
+                        self.aPsiteAnnot[np.where(np.in1d(self.aPsiteAnnot[:,5], aid))]
                     )
                 )
             )

@@ -71,3 +71,12 @@ ggsave('gg_fcdiff_top50_heatmap.pdf', device = cairo_pdf, width = 6, height = 14
 
 ### top heatmap with dendrogram
 
+fctophead <- head(fctop, 100)
+rnames <- fctophead$label
+rownames(fctophead) <- rnames
+mfctophead <- as.matrix(fctophead[,6:8])
+rownames(mfctophead) <- rnames
+psites_dendro <- as.dendrogram(hclust(dist(mfctophead)))
+ordr <- order.dendrogram(psites_dendro)
+ofctophead <- fctophead[ordr,]
+onames <- attr(ofctophead, 'dimnames')
