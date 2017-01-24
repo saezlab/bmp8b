@@ -60,6 +60,7 @@ class Bmp8(object):
             'resaa',
             'resnum',
             'label',
+            'original_resnum',
             'fc',
             'logfc',
             'zscore',
@@ -71,7 +72,7 @@ class Bmp8(object):
                  dirBase = '..',
                  fnIdMapping = 'PEX100_Layout.csv',
                  fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx',
-                 fnTable = 'bmp8_%s.csv',
+                 fnCombined = 'bmp8_%s.csv',
                  fnFcTable = 'fc_%s_%s.csv',
                  fnFcTopTable = 'fctop_%s_%s.csv',
                  fnFcTopCommon = 'fctop_%s.csv',
@@ -83,7 +84,7 @@ class Bmp8(object):
         
         self.set_path(fnXlsFullData, 'fnXlsFullData')
         self.set_path(fnIdMapping, 'fnIdMapping')
-        self.set_path(fnTable, 'fnTable')
+        self.set_path(fnCombined, 'fnCombined')
         self.set_path(fnFcTable, 'fnFcTable')
         self.set_path(fnFcTopTable, 'fnFcTopTable')
         self.set_path(fnFcTopCommon, 'fnFcTopCommon')
@@ -92,7 +93,7 @@ class Bmp8(object):
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
         
         self.reRes  = re.compile(r'([A-Z]?[a-z]*)([0-9]+)')
-        self.reORes = re.compile(r'[A-Za-z]{0,3}([/0-9]+)')
+        self.reORes = re.compile(r'[A-Za-z]{0,3}([/0-9]+)+')
         
         self.dAaletters = {
             'Thr': 'T',
@@ -516,8 +517,8 @@ class Bmp8(object):
                                                                                 res[0],
                                                                                 res[1],
                                                                                 ill[0], # the antibody ID
-                                                                                self.reORes.match(ill[1][0][2]).group(1) 
-                                                                                # the original residue numbers
+                                                                                ''.join(self.reORes.findall(ill[1][0][2]))
+                                                                                # the original residue numbers:
                                                                                 # sometimes these are needed for
                                                                                 # an unambiguous identification
                                                                                 # of the antibodies
@@ -878,7 +879,7 @@ class Bmp8(object):
                     self.dOrgSpecUniprot[k]
                 del self.dOrgSpecUniprot[k]
     
-    def export_table(self, to_file = False):
+    def combined_table(self, to_file = False):
         """
         Export a table with number of kinases for each substrate PTM.
         The table will be saved into `daTable` attribute, which is a
@@ -890,10 +891,11 @@ class Bmp8(object):
         def get_pratio(a, ckey, pkey, lnums, cnum):
             return a[lnums[pkey],cnum] / a[lnums[ckey],cnum]
         
-        self.lTableHdr = [
+        self.lCombinedHdr = [
                           'uniprot', 'gsymbol', 'name',
                           'numof_kin', 'degree',
                           'resaa', 'resnum', 'group', 'label',
+                          'original_resnum',
                           'std_gapdh', 'std_actin', 'std_pkc',
                           'signal', 'ctrl_signal',
                           'cv', 'ctrl_cv',
@@ -913,10 +915,11 @@ class Bmp8(object):
                           'fc', 'fc_actin', 'fc_gapdh', 'fc_pkc'
                           ]
         
-        self.lSingleTableHdr = [
+        self.lSingleHdr = [
                           'uniprot', 'gsymbol', 'name',
                           'numof_kin', 'degree',
                           'resaa', 'resnum', 'group', 'label',
+                          'original_resnum',
                           'phos',
                           'cv', 'ctrl_cv',
                           'std_name',
@@ -937,14 +940,20 @@ class Bmp8(object):
             'pkc':   'PKC pan activation site'
         }
         
-        dllTable = {'none': [], 'actin': [], 'gapdh': [], 'pkc': []}
+        dllCombined = {'none': [], 'actin': [], 'gapdh': [], 'pkc': []}
         
         self.daSignalNorm = {}
         
         self.daStd = {}
         
         dDataLnum = dict(map(lambda i:
-                                 ((i[1][0], i[1][2], i[1][3], i[1][4]), i[0]),
+                                 (
+                                    (i[1][0], i[1][2],
+                                    i[1][3], i[1][4],
+                                    i[1][6] # the original residue numbers
+                                    ),
+                                    i[0] # the row number
+                                 ),
                              enumerate(self.aSignalAnnot)))
         self.dDataLnum = dDataLnum
         
@@ -976,8 +985,8 @@ class Bmp8(object):
                                           'genesymbol', self.ncbi_tax_id)
             genesymbol = gss[0] if len(gss) else uniprot
             key = (uniprot, annot[3], annot[4])
-            pkey = (uniprot, 'Phospho', annot[3], annot[4])
-            ckey = (uniprot, 'Ab', '', annot[4])
+            pkey = (uniprot, 'Phospho', annot[3], annot[4], annot[6])
+            ckey = (uniprot, 'Ab',      '',       annot[4], annot[6])
             degree = self.pa.graph.vs.select(name = uniprot)[0].degree() \
                 if uniprot in self.pa.graph.vs['name'] else 0
             
@@ -1021,13 +1030,14 @@ class Bmp8(object):
                         annot[4],
                         group,
                         self.antibody_id_to_name(annot[5]),
+                        annot[6],
                         phos,
                         self.aCvarData[dDataLnum[dkey],cnum], # CV treatment
                         self.aCvarData[dDataLnum[dkey],0]     # CV control
                         # 10 (index)
                     ]
                     
-                    dllTable['none'].append(
+                    dllCombined['none'].append(
                         common_fields + [
                         
                             'none', # name of the standard
@@ -1051,7 +1061,7 @@ class Bmp8(object):
                     
                     for stdshort, stdname in iteritems(ctrls):
                         
-                        dllTable[stdshort].append(
+                        dllCombined[stdshort].append(
                             common_fields + [
                                 
                                 stdshort, # name of the standard
@@ -1076,26 +1086,26 @@ class Bmp8(object):
                             ]
                         )
         
-        self.dllTable = dllTable
+        self.dllCombined = dllCombined
         
         # make all to numpy array
-        for std in self.dllTable.keys():
+        for std in self.dllCombined.keys():
             
-            self.dllTable[std] = np.array(self.dllTable[std], dtype = np.object)
+            self.dllCombined[std] = np.array(self.dllCombined[std], dtype = np.object)
         
-        self.daTable = self.dllTable
-        del self.dllTable
+        self.daCombined = self.dllCombined
+        del self.dllCombined
         
         # write the table to outfile
         if to_file:
             
-            for std, arr in iteritems(self.daTable):
+            for std, arr in iteritems(self.daCombined):
                 
-                fname = self.fnTable % std
+                fname = self.fnCombined % std
                 
                 sys.stdout.write('\t:: Writing to `%s`.\n' % fname)
                 
-                self.table_to_file(arr, fname, self.lSingleTableHdr)
+                self.table_to_file(arr, fname, self.lSingleHdr)
     
     @staticmethod
     def fold_change(val, ctrl):
@@ -1177,16 +1187,17 @@ class Bmp8(object):
                 else str(val)
             )
     
-    def export_fc_table(self, to_file = False):
+    def fc_table(self, to_file = False):
         """
         Creates tables with fold changes, and exports to files optionally.
         Calculates z-scores, p-values and t-values.
         """
         
-        daFcTable = {}
+        daFcTable       = {}
+        daPTopFcTable   = {}
         daUniqueFcTable = {}
         
-        for std, tbl in iteritems(self.daTable):
+        for std, tbl in iteritems(self.daCombined):
             
             daFcTable[std] = {}
             
@@ -1198,12 +1209,12 @@ class Bmp8(object):
                 daFcTable[std][treat[0]] = []
                 
                 for it in tbl[np.where(np.logical_and(tbl[:,7] == treat[0],
-                                                      tbl[:,9] == 'p'))]:
+                                                      tbl[:,10] == 'p'))]:
                     
                     # uniprot, genesymbol, name,
                     # resaa, resnum, label, fold change
                     daFcTable[std][treat[0]].append(
-                        [it[0], it[1], it[2], it[5], it[6], it[8], it[-1]])
+                        [it[0], it[1], it[2], it[5], it[6], it[8], it[9], it[-1]])
                 
                 daFcTable[std][treat[0]] = np.array(daFcTable[std][treat[0]],
                                                     dtype = np.object)
@@ -1251,46 +1262,59 @@ class Bmp8(object):
         for std, arrs in iteritems(self.daFcTable):
             
             daUniqueFcTable[std] = {}
+            daPTopFcTable[std]   = {}
             
             for tr, arr in iteritems(arrs):
                 
                 proteins = set(arr[:,0])
-                antibodies = set([])
+                antibodies = set(map(lambda r: (r[5], r[6]), arr))
                 
+                daPTopFcTable[std][tr] = []
                 daUniqueFcTable[std][tr] = []
                 
                 for protein in proteins:
                     
                     this_protein = arr[np.where(arr[:,0] == protein)]
                     
-                    imin = np.argmin(this_protein[:,9])
+                    imin = np.argmin(this_protein[:,10]) # the min p-value
                     
                     # avoid duplicates -- only one per antibody
-                    if this_protein[imin, 5] not in antibodies:
-                        daUniqueFcTable[std][tr].append(this_protein[imin,:])
-                        antibodies.add(this_protein[imin, 5])
+                    #if this_protein[imin, 5] not in antibodies:
+                    daPTopFcTable[std][tr].append(this_protein[imin,:])
+                    #antibodies.add(this_protein[imin, 5])
                 
+                for ab in antibodies:
+                    
+                    this_ab = arr[np.where(np.logical_and(arr[:,5] == ab[0], arr[:,6] == ab[1]))]
+                    
+                    daUniqueFcTable[std][tr].append(this_ab[0,:])
+                
+                daPTopFcTable[std][tr]   = np.vstack(daPTopFcTable[std][tr])
                 daUniqueFcTable[std][tr] = np.vstack(daUniqueFcTable[std][tr])
         
+        self.daPTopFcTable   = daPTopFcTable
         self.daUniqueFcTable = daUniqueFcTable
         
         if to_file:
             
-            self.fc_table_to_file()
+            self.fc_table_to_file(unique = True)
+            self.fc_table_to_file(unique = False)
     
     def fc_table_to_file(self, unique = True):
         """
         Writes FC tables to files.
         """
         
-        daTable = self.daUniqueFcTable if unique else self.daFcTable
+        daFc = self.daUniqueFcTable if unique else self.daFcTable
         
-        for std, arrs in iteritems(daTable):
+        for std, arrs in iteritems(daFc):
             
             for tr, arr in iteritems(arrs):
                 
                 fname = self.fnFcTable if unique else self.fnFcTopTable
                 fname = fname % (tr, std)
+                
+                sys.stdout.write('\tWriting to `%s`.\n' % fname)
                 
                 self.table_to_file(arr, fname, self.lFcTableHdr)
     
@@ -1851,55 +1875,60 @@ class Bmp8(object):
         Orders proteins by fold change diff.
         """
         
-        for std in self.daFcTable.keys():
+        for attr in ['daFcTable', 'daUniqueFcTable']:
             
-            tab = self.daFcTable[std]
+            tables = getattr(self, attr)
             
-            ordr = \
-                np.array(
-                    list(
-                        map(
-                            lambda it:
-                                it[0],
-                            sorted(
-                                map(
-                                    lambda i:
-                                        (
-                                            i,
-                                            max(
-                                                map(
-                                                    lambda tr:
-                                                        abs(
-                                                            tab[tr[0]][i,6] -
-                                                            np.sign(
-                                                                tab[tr[0]][i,6]
-                                                            ) - (
-                                                            tab[tr[1]][i,6] -
-                                                            np.sign(
-                                                                tab[tr[1]][i,6]
-                                                            )
-                                                            )
-                                                        ),
-                                                    itertools.combinations(
-                                                        tab.keys(),
-                                                        2
+            for std in tables.keys():
+                
+                tab = tables[std]
+                
+                ordr = \
+                    np.array(
+                        list(
+                            map(
+                                lambda it:
+                                    it[0],
+                                sorted(
+                                    map(
+                                        lambda i:
+                                            (
+                                                i,
+                                                max(
+                                                    map(
+                                                        lambda tr:
+                                                            abs(
+                                                                tab[tr[0]][i,7]-
+                                                                np.sign(
+                                                                    tab[tr[0]][i,7]
+                                                                ) - (
+                                                                tab[tr[1]][i,7] -
+                                                                np.sign(
+                                                                    tab[tr[1]][i,7]
+                                                                )
+                                                                )
+                                                            ),
+                                                        itertools.combinations(
+                                                            tab.keys(),
+                                                            2
+                                                        )
                                                     )
                                                 )
-                                            )
-                                        ),
-                                    xrange(list(tab.values())[0].shape[0])
-                                ),
-                                key = lambda it: it[1],
-                                reverse = True
+                                            ),
+                                        xrange(list(tab.values())[0].shape[0])
+                                    ),
+                                    key = lambda it: it[1],
+                                    reverse = True
+                                )
                             )
                         )
                     )
-                )
-            
-            for tr in tab.keys():
                 
-                tab[tr] = tab[tr][ordr,:]
+                for tr in tab.keys():
+                    
+                    tab[tr] = tab[tr][ordr,:]
         
+        self.fc_table_to_file(unique = True)
         self.fc_table_to_file(unique = False)
     
     def fc_top_table(self, unique = True):
@@ -1908,7 +1937,8 @@ class Bmp8(object):
         """
         
         lHdr = ['uniprot', 'genesymbol', 'name',
-                'resaa', 'resnum', 'label', 'psite']
+                'resaa', 'resnum', 'label',
+                'original_resnum', 'psite']
         
         self.daFcTop = {}
         
@@ -1925,18 +1955,20 @@ class Bmp8(object):
             
             for i in xrange(list(da.values())[0].shape[0]):
                 
-                row = list(list(da.values())[0][i,:6])
+                row = list(list(da.values())[0][i,:7])
                 row.append('%s_%s%u' % (row[1], row[3], row[4]))
                 
                 for tr in trs:
                     
-                    row.append(da[tr][i,6])
+                    row.append(da[tr][i,8])
                 
                 ll.append(row)
             
             self.daFcTop[std] = np.array(ll, dtype = np.object)
             
             fname = self.fnFcTopCommon % std
+            
+            sys.stdout.write('\tWriting to `%s`.\n' % fname)
             
             self.table_to_file(self.daFcTop[std], fname, lHdr)
     
@@ -2172,3 +2204,5 @@ class Bmp8(object):
                 )
             )
         )
+    
+    ### Direct functional annotation
