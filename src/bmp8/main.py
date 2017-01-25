@@ -1886,6 +1886,20 @@ class Bmp8(object):
         return self.get_regulation_data('disrupts', substrate,
                                         residue, offset)
     
+    def affected_by(self, substrate, residue = None, offset = None):
+        """
+        Returns the UniProt IDs of the interacting protein partners of the
+        phosphorylated substrate which the phosphorylation event affects
+        the substrate's interaction with.
+        """
+        
+        return (
+            self.get_regulation_data('induces', substrate,
+                                        residue, offset) |
+            self.get_regulation_data('disrupts', substrate,
+                                        residue, offset)
+        )
+    
     def psite_effect(self, substrate, residue = None, offset = None):
         """
         Returns a tuple of two boolean values.
