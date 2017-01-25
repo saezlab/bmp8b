@@ -16,6 +16,9 @@ b.combined_table(to_file = True)
 b.fc_table(to_file = True)
 b.fc_top_table()
 b.kinact_analysis()
+b.regulatory_sites()
+
+
 b.kinact_top(threshold = 1.0)
 b.kinact_top(threshold = 1.0, fname = 'kinact_top.tab')
 

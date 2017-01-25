@@ -1785,6 +1785,22 @@ class Bmp8(object):
                 
                 self.dsetPsiteKin[tPsite].add(kinase)
     
+    def get_psite(self, substrate, residue = None, offset = None):
+        """
+        From a phosphosite string representation or substrate UniProt ID,
+        residue name and number separately, returns an uniform tuple
+        representation.
+        """
+        
+        if residue is None and offset is None:
+            mPsite = self.rePsite.match(substrate)
+            if mPsite is None:
+                sys.stdout.write('\t:: Could not determine residue and number.\n')
+                return None
+            substrate, residue, offset = mPsite.groups()
+        
+        return (substrate, residue, int(offset))
+    
     def kinases_of_substrate(self, substrate, residue = None, offset = None):
         """
         Returns the kinases of a substrate.
@@ -1792,16 +1808,95 @@ class Bmp8(object):
         
         self.psite_kinase_adj()
         
-        if residue is None and offset is None:
-            mPsite = self.rePsite.match(substrate)
-            if mPsite is None:
-                sys.stdout.write('\t:: Could not determine residue and number.\n')
-                return set([])
-            psite = mPsite.groups()
-        else:
-            psite = (substrate, residue, offset)
+        psite = self.get_psite(substrate, residue, offset)
         
         return self.dsetPsiteKin[psite] if psite in self.dsetPsiteKin else set([])
+    
+    def regulatory_sites(self, _reload = False):
+        """
+        Loads the PhosphoSitePlus regulatory sites data.
+        Data about the phosphorylation sites on the assay
+        is saved to `ddRegSites`.
+        """
+        
+        if hasattr(self, 'ddRegSites') and not _reload:
+            return None
+        
+        raw = (
+            pypath.dataio.regsites_one_organism(organism = self.ncbi_tax_id)
+        )
+        
+        self.ddRegSites = {}
+        
+        for psite in self.setAssayPsites:
+            
+            tPsite = self.get_psite(psite)
+            key = (tPsite[1], tPsite[2], 'phosphorylation')
+            self.ddRegSites[tPsite] = None
+            
+            if tPsite[0] in raw:
+                
+                key = (tPsite[1], tPsite[2], 'phosphorylation')
+                
+                if key in raw[tPsite[0]]:
+                    
+                    self.ddRegSites[tPsite] = raw[tPsite[0]][key]
+    
+    def get_regulation_data(self, key, substrate,
+                            residue = None, offset = None):
+        """
+        Returns a piece of information from the regulatory sites
+        data about one phosphorylation site.
+        """
+        self.regulatory_sites()
+        
+        defaults = {
+            'induces':  set([]),
+            'disrupts': set([]),
+            'positive': False,
+            'negative': False
+        }
+        
+        psite = self.get_psite(substrate, residue, offset)
+        
+        return (
+            self.ddRegSites[psite][key]
+            if psite in self.ddRegSites
+            and self.ddRegSites[psite] is not None
+            else defaults[key]
+        )
+    
+    def induced_by(self, substrate, residue = None, offset = None):
+        """
+        Returns the UniProt IDs of the interacting protein partners of the
+        phosphorylated substrate which the phosphorylation event induces
+        the substrate's interaction with.
+        """
+        
+        return self.get_regulation_data('induces', substrate,
+                                        residue, offset)
+    
+    def disrupted_by(self, substrate, residue = None, offset = None):
+        """
+        Returns the UniProt IDs of the interacting protein partners of the
+        phosphorylated substrate which the phosphorylation event disrupts
+        the substrate's interaction with.
+        """
+        
+        return self.get_regulation_data('disrupts', substrate,
+                                        residue, offset)
+    
+    def psite_effect(self, substrate, residue = None, offset = None):
+        """
+        Returns a tuple of two boolean values.
+        The first is True if the phosphorylation event has a
+        stimulatory effect. The second is True if the phosphorylation
+        has an inhibitory effect.
+        """
+        return(
+            self.get_regulation_data('positive', substrate, residue, offset),
+            self.get_regulation_data('negative', substrate, residue, offset)
+        )
     
     def kinact_top(self, fname = None, threshold = 0.2):
         """
