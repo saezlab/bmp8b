@@ -1778,7 +1778,7 @@ class Bmp8(object):
             
             for psite in psites:
                 
-                tPsite = self.rePsite.match(psite).groups()
+                tPsite = self.get_psite(psite)
                 
                 if tPsite not in self.dsetPsiteKin:
                     self.dsetPsiteKin[tPsite] = set([])
@@ -1897,6 +1897,38 @@ class Bmp8(object):
             self.get_regulation_data('positive', substrate, residue, offset),
             self.get_regulation_data('negative', substrate, residue, offset)
         )
+    
+    def psite_stimulatory_unambiguous(self, substrate,
+                                      residue = None, offset = None):
+        """
+        Returns True only if the phosphorylation site is stimulatory
+        and not inhibitory.
+        """
+        effect = self.psite_effect(substrate, residue, offset)
+        return effect[0] and not effect[1]
+    
+    def psite_inhibitory_unambiguous(self, substrate,
+                                     residue = None, offset = None):
+        """
+        Returns True only if the phosphorylation site is inhibitory
+        and not stimulatory.
+        """
+        effect = self.psite_effect(substrate, residue, offset)
+        return effect[1] and not effect[0]
+    
+    def psite_stimulatory(self, substrate, residue = None, offset = None):
+        """
+        Tells if the phosphorylation site has a stimulatory effect.
+        """
+        return self.get_regulation_data('positive', substrate,
+                                        residue, offset)
+    
+    def psite_inhibitory(self, substrate, residue = None, offset = None):
+        """
+        Tells if the phosphorylation site has a inhibitory effect.
+        """
+        return self.get_regulation_data('negative', substrate,
+                                        residue, offset)
     
     def kinact_top(self, fname = None, threshold = 0.2):
         """
