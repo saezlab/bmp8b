@@ -39,14 +39,22 @@ import matplotlib.backends.backend_pdf
 try:
     import matplotlib_venn as mplvenn
 except:
-    sys.stdout.write('\t:: No module `matplotlib_venn` available.\n')
+    sys.stdout.write('\t:: Could not import module `matplotlib_venn`.\n')
 
-import pypath
+try:
+    import pypath
+except:
+    sys.stdout.write('\t:: Could not import module `pypath`.\n')
+
+try:
+    import pysemsim
+except:
+    sys.stdout.write('\t:: Could not import module `pysemsim`.\n')
 
 try:
     import kinact
 except:
-    sys.stdout.write('\t:: No module `kinact` available.\n')
+    sys.stdout.write('\t:: Could not import module `kinact`.\n')
 
 if 'unicode' not in __builtins__:
     unicode = str
@@ -2415,5 +2423,4 @@ class Bmp8(object):
         
         self.dGOBP    = go['terms']['P']
         self.dGONames = go['names']
-    
     
