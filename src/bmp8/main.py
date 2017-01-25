@@ -2402,4 +2402,18 @@ class Bmp8(object):
     #                          GO:0007049 (cell cycle)
     #
     
+    def load_go(self, _reload = False):
+        """
+        Loads the GO biological process annotations
+        if those haven't been loaded or reload forced.
+        """
+        
+        if hasattr(self, 'dGOBP') and hasattr(self, 'dGONames') and not _reload:
+            return None
+        
+        go = pypath.dataio.get_go_quick(organism = self.ncbi_tax_id)
+        
+        self.dGOBP    = go['terms']['P']
+        self.dGONames = go['names']
+    
     
