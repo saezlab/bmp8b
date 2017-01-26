@@ -84,6 +84,7 @@ class Bmp8(object):
                  fnFcTable = 'fc_%s_%s.csv',
                  fnFcTopTable = 'fctop_%s_%s.csv',
                  fnFcTopCommon = 'fctop_%s.csv',
+                 fnFuncCat = 'func_annot_categories.tab',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -96,6 +97,7 @@ class Bmp8(object):
         self.set_path(fnFcTable, 'fnFcTable')
         self.set_path(fnFcTopTable, 'fnFcTopTable')
         self.set_path(fnFcTopCommon, 'fnFcTopCommon')
+        self.set_path(fnFuncCat, 'fnFuncCat')
         
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
@@ -2414,13 +2416,46 @@ class Bmp8(object):
         """
         Loads the GO biological process annotations
         if those haven't been loaded or reload forced.
+        Also loads the ontology graph as a
+        ``pysemsim.GOTrees`` object. This is for lookup
+        of ancestors.
         """
         
-        if hasattr(self, 'dGOBP') and hasattr(self, 'dGONames') and not _reload:
+        if (
+            hasattr(self, 'dGOBP') and
+            hasattr(self, 'dGONames') and
+            hasattr(self, 'GOOntology') and
+            not _reload
+        ):
             return None
         
         go = pypath.dataio.get_go_quick(organism = self.ncbi_tax_id)
         
         self.dGOBP    = go['terms']['P']
         self.dGONames = go['names']
+        
+        urlObo = pypath.urls.urls['go']['url']
+        c = pypath.curl.Curl(urlObo, silent = False, large = True)
+        fnObo = c.fileobj.name
+        c.close()
+        del c
+        
+        self.GOOntology = pysemsim.GraphBased(fnObo)
     
+    def read_functional_categories(self):
+        """
+        Reads a set of functional categories defined by GO terms.
+        """
+        
+        self.dsetFuncCat
+        
+        with open(self.fnFuncCat, 'r') as fp:
+            
+            for l in fp:
+                
+                l = l.split('\t')
+                
+                if l[0] not in self.dsetFuncCat:
+                    self.dsetFuncCat[l[0]] = set([])
+                
+                self.dsetFuncCat[l[0]].add(l[1].split()[0])
