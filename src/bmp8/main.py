@@ -69,6 +69,7 @@ class Bmp8(object):
             'resnum',
             'label',
             'original_resnum',
+            'effect',
             'fc',
             'logfc',
             'zscore',
@@ -85,6 +86,7 @@ class Bmp8(object):
                  fnFcTopTable = 'fctop_%s_%s.csv',
                  fnFcTopCommon = 'fctop_%s.csv',
                  fnFuncCat = 'func_annot_categories.tab',
+                 fnFuncTidy = 'functional.csv',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -98,6 +100,7 @@ class Bmp8(object):
         self.set_path(fnFcTopTable, 'fnFcTopTable')
         self.set_path(fnFcTopCommon, 'fnFcTopCommon')
         self.set_path(fnFuncCat, 'fnFuncCat')
+        self.set_path(fnFuncTidy, 'fnFuncTidy')
         
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
@@ -1254,7 +1257,14 @@ class Bmp8(object):
                     # uniprot, genesymbol, name,
                     # resaa, resnum, label, fold change
                     daFcTable[std][treat[0]].append(
-                        [it[0], it[1], it[2], it[5], it[6], it[8], it[9], it[-1]])
+                        [
+                            it[0], it[1],
+                            it[2], it[5],
+                            it[6], it[8],
+                            it[9],
+                            self.effect_as_int(it[0], it[5], it[6]),
+                            it[-1]
+                        ])
                 
                 daFcTable[std][treat[0]] = np.array(daFcTable[std][treat[0]],
                                                     dtype = np.object)
@@ -1951,6 +1961,18 @@ class Bmp8(object):
             self.get_regulation_data('negative', substrate, residue, offset)
         )
     
+    def effect_as_int(self, substrate, residue = None, offset = None):
+        """
+        Returns the unambiguous effect as an integer, either -1, 0 or 1.
+        """
+        return (
+            0 +
+            int(self.psite_stimulatory_unambiguous(
+                substrate, residue, offset)) -
+            int(self.psite_inhibitory_unambiguous(
+                substrate, residue, offset))
+        )
+    
     def psite_stimulatory_unambiguous(self, substrate,
                                       residue = None, offset = None):
         """
@@ -2119,13 +2141,13 @@ class Bmp8(object):
                                                     map(
                                                         lambda tr:
                                                             abs(
-                                                                tab[tr[0]][i,7]-
+                                                                tab[tr[0]][i,8]-
                                                                 np.sign(
-                                                                    tab[tr[0]][i,7]
+                                                                    tab[tr[0]][i,8]
                                                                 ) - (
-                                                                tab[tr[1]][i,7] -
+                                                                tab[tr[1]][i,8] -
                                                                 np.sign(
-                                                                    tab[tr[1]][i,7]
+                                                                    tab[tr[1]][i,8]
                                                                 )
                                                                 )
                                                             ),
@@ -2159,7 +2181,7 @@ class Bmp8(object):
         
         lHdr = ['uniprot', 'genesymbol', 'name',
                 'resaa', 'resnum', 'label',
-                'original_resnum', 'psite']
+                'original_resnum', 'effect', 'psite']
         
         self.daFcTop = {}
         
@@ -2176,12 +2198,12 @@ class Bmp8(object):
             
             for i in xrange(list(da.values())[0].shape[0]):
                 
-                row = list(list(da.values())[0][i,:7])
+                row = list(list(da.values())[0][i,:8])
                 row.append('%s_%s%u' % (row[1], row[3], row[4]))
                 
                 for tr in trs:
                     
-                    row.append(da[tr][i,8])
+                    row.append(da[tr][i,9])
                 
                 ll.append(row)
             
@@ -2548,7 +2570,8 @@ class Bmp8(object):
         """
         Compiles an array of functional annotations.
         """
-        arr = list(self.daUniqueFcTable['none'].values())[0]
+        arr    = list(self.daUniqueFcTable['none'].values())[0]
+        cats   = sorted(self.dsetFuncCat.keys())
         llFunc = []
         
         for row in arr:
@@ -2556,13 +2579,7 @@ class Bmp8(object):
             psite   = (row[0], row[3], row[4])
             protein = row[0]
             
-            effect = (
-                0 +
-                int(self.psite_stimulatory_unambiguous(*psite)) -
-                int(self.psite_inhibitory_unambiguous(*psite))
-            )
-            
-            cats = sorted(self.dsetFuncCat.keys())
+            effect = self.effect_as_int(*psite)
             
             self_func = (
                 list(
@@ -2604,7 +2621,7 @@ class Bmp8(object):
                 list(
                     itertools.chain(
                         psite,
-                        [effect],
+                        [row[5], effect],
                         self_func,
                         kinases_func,
                         regulated_func
@@ -2616,7 +2633,7 @@ class Bmp8(object):
         lHdrFunc = (
             list(
                 itertools.chain(
-                    ['uniprot', 'resaa', 'resnum', 'effect'],
+                    ['uniprot', 'resaa', 'resnum', 'label', 'effect'],
                     map(lambda cat: '%s;self' % cat, cats),
                     map(lambda cat: '%s;kinases' % cat, cats),
                     map(lambda cat: '%s;regulated' % cat, cats),
@@ -2626,3 +2643,33 @@ class Bmp8(object):
         
         self.aFunc = np.array(llFunc, dtype = np.object)
         self.lHdrFunc = lHdrFunc
+    
+    def tidy_functional_array(self):
+        """
+        Creates a tidy array from the functional data and exports it to file.
+        """
+        
+        lHdr = ['label', 'func', 'category', 'value']
+        
+        func_of = ['self', 'kinases', 'regulated']
+        cats    = sorted(self.dsetFuncCat.keys())
+        result  = []
+        
+        for icat, cat in enumerate(cats):
+            
+            for ifun, fun in enumerate(func_of):
+                
+                col = 5 + len(cats) * ifun + icat
+                
+                result.append(
+                    np.hstack([
+                        self.aFunc[:,3].reshape(self.aFunc.shape[0], 1),
+                        np.array([[cat, fun]] * self.aFunc.shape[0]),
+                        self.aFunc[:,col].reshape(
+                            self.aFunc.shape[0], 1).astype(np.float)
+                    ])
+                )
+        
+        self.aTidyFunc = np.vstack(result)
+        
+        self.table_to_file(self.aTidyFunc, self.fnFuncTidy, lHdr)
