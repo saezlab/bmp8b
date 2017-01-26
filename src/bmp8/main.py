@@ -255,7 +255,18 @@ class Bmp8(object):
     # Loading experimental data.
     #
     
-    def init(self):
+    def main(self):
+        """
+        Calls ``init()`` and ``workflow()``.
+        Runs the whole data processing and analysis and exports files.
+        """
+        self.init()
+        self.workflow()
+    
+    def init(self, network = False):
+        """
+        Loads and preprocesses all input data.
+        """
         self.init_pypath()
         self.idmapping()
         self.read_tables()
@@ -263,8 +274,26 @@ class Bmp8(object):
         self.load_seq()
         self.create_ptms()
         self.ptms_lookup()
+        if network:
+            self.network()
+        self.regulatory_sites()
+        self.load_go()
+    
+    def workflow(self):
+        """
+        Runs the analysis tasks and exports files.
+        """
+        self.combined_table(to_file = True)
+        self.fc_table(to_file = True)
+        self.fc_top_table()
+        self.kinact_analysis()
+        self.kinact_top(threshold = 1.0, fname = 'kinact_top.tab')
+        self.functional_array()
     
     def network(self, extra_proteins = [], edges_percentile = 50, pfile = None):
+        """
+        Loads and processes the network.
+        """
         self.collect_proteins()
         self.load_network(pfile = pfile)
         self.get_network(keep_also = extra_proteins)
@@ -2422,8 +2451,8 @@ class Bmp8(object):
         """
         
         if (
-            hasattr(self, 'dGOBP') and
-            hasattr(self, 'dGONames') and
+            hasattr(self, 'dsetGOBP') and
+            hasattr(self, 'dsGONames') and
             hasattr(self, 'GOOntology') and
             not _reload
         ):
@@ -2431,8 +2460,8 @@ class Bmp8(object):
         
         go = pypath.dataio.get_go_quick(organism = self.ncbi_tax_id)
         
-        self.dGOBP    = go['terms']['P']
-        self.dGONames = go['names']
+        self.dsetGOBP    = go['terms']['P']
+        self.dsGONames = go['names']
         
         urlObo = pypath.urls.urls['go']['url']
         c = pypath.curl.Curl(urlObo, silent = False, large = True)
@@ -2440,14 +2469,25 @@ class Bmp8(object):
         c.close()
         del c
         
-        self.GOOntology = pysemsim.GraphBased(fnObo)
+        self.GOOntology     = pysemsim.GOTrees(fnObo)
+        self.dsetGOBPAncestors = (
+            dict(
+                map(
+                    lambda protein: (
+                        protein,
+                        self.terms_with_ancestors(protein)
+                    ),
+                    self.dsetGOBP.keys()
+                )
+            )
+        )
     
     def read_functional_categories(self):
         """
         Reads a set of functional categories defined by GO terms.
         """
         
-        self.dsetFuncCat
+        self.dsetFuncCat = {}
         
         with open(self.fnFuncCat, 'r') as fp:
             
@@ -2459,3 +2499,130 @@ class Bmp8(object):
                     self.dsetFuncCat[l[0]] = set([])
                 
                 self.dsetFuncCat[l[0]].add(l[1].split()[0])
+    
+    def terms_with_ancestors(self, protein):
+        """
+        Returns all GO terms of one ``protein`` including all their
+        ancestors.
+        """
+        return (
+            set(
+                itertools.chain(
+                    *map(
+                        lambda term:
+                            self.GOOntology.get_ancestors(term),
+                        self.dsetGOBP[protein]
+                    )
+                )
+            ) | self.dsetGOBP[protein]
+        )
+    
+    def terms_of_category(self, protein, cat):
+        """
+        Returns the terms in one functional category ``cat``
+        one ``protein`` has been annotated with.
+        """
+        
+        return self.dsetGOBPAncestors[protein] & self.dsetFuncCat[cat]
+    
+    def has_terms_of_category(self, protein, cat):
+        """
+        Returns if one ``protein`` has been annotated with any of
+        the terms in one functional category ``cat``.
+        """
+        
+        return bool(self.terms_of_category(protein, cat))
+    
+    def ratio_having_terms_of_category(self, proteins, cat):
+        """
+        Returns the ratio of the proteins in list ``proteins``
+        that have been annotated with any terms in category ``cat``.
+        """
+        
+        return (
+            sum(map(lambda p: self.has_terms_of_category(p, cat), proteins)) /
+            float(len(proteins))
+        ) if len(proteins) else 0.0
+    
+    def functional_array(self):
+        """
+        Compiles an array of functional annotations.
+        """
+        arr = list(self.daUniqueFcTable['none'].values())[0]
+        llFunc = []
+        
+        for row in arr:
+            
+            psite   = (row[0], row[3], row[4])
+            protein = row[0]
+            
+            effect = (
+                0 +
+                int(self.psite_stimulatory_unambiguous(*psite)) -
+                int(self.psite_inhibitory_unambiguous(*psite))
+            )
+            
+            cats = sorted(self.dsetFuncCat.keys())
+            
+            self_func = (
+                list(
+                    map(
+                        lambda cat:
+                            int(self.has_terms_of_category(protein, cat)),
+                        cats
+                    )
+                )
+            )
+            
+            kinases_func = (
+                list(
+                    map(
+                        lambda cat:
+                            self.ratio_having_terms_of_category(
+                                self.kinases_of_substrate(*psite),
+                                cat
+                            ),
+                        cats
+                    )
+                )
+            )
+            
+            regulated_func = (
+                list(
+                    map(
+                        lambda cat:
+                            self.ratio_having_terms_of_category(
+                                self.affected_by(*psite),
+                                cat
+                            ),
+                        cats
+                    )
+                )
+            )
+            
+            llFunc.append(
+                list(
+                    itertools.chain(
+                        psite,
+                        [effect],
+                        self_func,
+                        kinases_func,
+                        regulated_func
+                    )
+                )
+            )
+            
+        
+        lHdrFunc = (
+            list(
+                itertools.chain(
+                    ['uniprot', 'resaa', 'resnum', 'effect'],
+                    map(lambda cat: '%s;self' % cat, cats),
+                    map(lambda cat: '%s;kinases' % cat, cats),
+                    map(lambda cat: '%s;regulated' % cat, cats),
+                )
+            )
+        )
+        
+        self.aFunc = np.array(llFunc, dtype = np.object)
+        self.lHdrFunc = lHdrFunc
