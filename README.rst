@@ -1,5 +1,5 @@
-Python module `bmp8`
-====================
+Python module `pex100`
+======================
 This module implements a  phosphoassay data analyis workflow.
 In its current state, as data is unpublished, it is useless for the public.
 Data becomes available upon publication of the paper.
@@ -25,7 +25,7 @@ Quick start
 .. code:: python
         
         import pex100
-        b = bmp8.Bmp8(ncbi_tax_id = 9606)
+        b = pex100.Pex100(ncbi_tax_id = 9606)
         b.init()
         b.export_table(to_file = True)
         b.export_fc_table(to_file = True)
