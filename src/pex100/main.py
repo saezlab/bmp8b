@@ -59,7 +59,7 @@ except:
 if 'unicode' not in __builtins__:
     unicode = str
 
-class Bmp8(object):
+class Pex100(object):
     
     lFcTableHdr = [
             'uniprot',

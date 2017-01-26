@@ -9,7 +9,7 @@ Installation
 
 .. code:: bash
     
-    pip install git+https://bitbucket.org/deeenes/bmp8.git
+    pip install git+https://bitbucket.org/deeenes/pex100.git
 
 
 Requirements
@@ -24,7 +24,7 @@ Quick start
 
 .. code:: python
         
-        import bmp8
+        import pex100
         b = bmp8.Bmp8(ncbi_tax_id = 9606)
         b.init()
         b.export_table(to_file = True)
