@@ -1,4 +1,19 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#
+#  This file is part of the `pex100` Python module
+#
+#  Copyright (c) 2016-2017 - EMBL-EBI
+#
+#  File author(s): Dénes Türei (turei.denes@gmail.com)
+#
+#  Distributed under the GPLv3 License.
+#  See accompanying file LICENSE.txt or copy at
+#      http://www.gnu.org/licenses/gpl-3.0.html
+#
+#  Website: http://www.ebi.ac.uk/~denes
+#
 
 __revision__ = "$Id$"
 import sys
@@ -16,13 +31,13 @@ metainfo = {
     },
     'version': __version__,
     'license': 'GPLv3',
-    'download_url': ['http://bitbucket.org/deeenes/bmp8'],
-    'url': ['http://bitbucket.org/deeenes/bmp8'],
+    'download_url': ['http://bitbucket.org/deeenes/pex100'],
+    'url': ['http://bitbucket.org/deeenes/pex100'],
     'description': 'Phosphoassay data analysis',
     'platforms': ['Linux', 'Unix', 'MacOSX', 'Windows'],
     'keywords': ['data analysis', 'BMP8', 'noradrenaline', 'brown adipose tissue'],
     'classifiers': [
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
     'Intended Audience :: Science/Research',
     'License :: GNU GPLv3',
@@ -47,7 +62,7 @@ extras = {
 }
 
 setup(
-    name = 'bmp8',
+    name = 'pex100',
     version = __version__,
     maintainer = metainfo['authors']['Türei'][0],
     maintainer_email = metainfo['authors']['Türei'][1],
@@ -67,5 +82,5 @@ setup(
     include_package_data = True,
     install_requires = deps,
     extras_requre = extras,
-    package_data = {'__version__': os.path.join('src', 'csim', '__version__')}
+    package_data = {'__version__': os.path.join('src', 'pex100', '__version__')}
 )
