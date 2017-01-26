@@ -7,6 +7,7 @@
 require(ggplot2)
 require(reshape2)
 require(ggdendro)
+require(grid)
 
 inFile <- 'fctop_none.csv'
 fctop <- read.table(inFile, header = TRUE, sep = '\t')
