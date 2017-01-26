@@ -11,8 +11,11 @@ import collections
 import pex100
 
 b = pex100.Pex100(ncbi_tax_id = 9606)
-b.init()
+b.main()
+
+
 b.workflow()
+
 b.combined_table(to_file = True)
 b.fc_table(to_file = True)
 b.fc_top_table()

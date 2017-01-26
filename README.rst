@@ -26,10 +26,7 @@ Quick start
         
         import pex100
         b = pex100.Pex100(ncbi_tax_id = 9606)
-        b.init()
-        b.export_table(to_file = True)
-        b.export_fc_table(to_file = True)
-        b.kinact_analysis()
+        b.main()
 
 Authors
 -------

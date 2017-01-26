@@ -87,6 +87,7 @@ class Pex100(object):
                  fnFcTopCommon = 'fctop_%s.csv',
                  fnFuncCat = 'func_annot_categories.tab',
                  fnFuncTidy = 'functional.csv',
+                 fnKinactTop = 'kinact_top.tab',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -101,6 +102,7 @@ class Pex100(object):
         self.set_path(fnFcTopCommon, 'fnFcTopCommon')
         self.set_path(fnFuncCat, 'fnFuncCat')
         self.set_path(fnFuncTidy, 'fnFuncTidy')
+        self.set_path(fnKinactTop, 'fnKinactTop')
         
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
@@ -258,18 +260,12 @@ class Pex100(object):
     # Loading experimental data.
     #
     
-    def main(self):
-        """
-        Calls ``init()`` and ``workflow()``.
-        Runs the whole data processing and analysis and exports files.
-        """
-        self.init()
-        self.workflow()
-    
-    def init(self, network = False):
+    def main(self, network = False):
         """
         Loads and preprocesses all input data.
+        Runs the whole data processing and analysis and exports files.
         """
+        
         self.init_pypath()
         self.idmapping()
         self.read_tables()
@@ -279,19 +275,16 @@ class Pex100(object):
         self.ptms_lookup()
         if network:
             self.network()
-        self.regulatory_sites()
-        self.load_go()
-    
-    def workflow(self):
-        """
-        Runs the analysis tasks and exports files.
-        """
         self.combined_table(to_file = True)
+        self.fc_table(to_file = False)
+        self.regulatory_sites()
         self.fc_table(to_file = True)
+        self.load_go()
         self.fc_top_table()
         self.kinact_analysis()
         self.kinact_top(threshold = 1.0, fname = 'kinact_top.tab')
         self.functional_array()
+        self.tidy_functional_array()
     
     def network(self, extra_proteins = [], edges_percentile = 50, pfile = None):
         """
@@ -1262,7 +1255,11 @@ class Pex100(object):
                             it[2], it[5],
                             it[6], it[8],
                             it[9],
-                            self.effect_as_int(it[0], it[5], it[6]),
+                            (
+                                self.effect_as_int(it[0], it[5], it[6])
+                                if hasattr(self, 'lAllKinases')
+                                else 0
+                            ),
                             it[-1]
                         ])
                 
@@ -1364,7 +1361,7 @@ class Pex100(object):
                 fname = self.fnFcTable if unique else self.fnFcTopTable
                 fname = fname % (tr, std)
                 
-                sys.stdout.write('\tWriting to `%s`.\n' % fname)
+                sys.stdout.write('\t:: Writing to `%s`.\n' % fname)
                 
                 self.table_to_file(arr, fname, self.lFcTableHdr)
     
@@ -1603,12 +1600,16 @@ class Pex100(object):
     def collect_participants(self,
                              attr,
                              get_participant = 'get_kinase_uniprot',
-                             type_filter = 'is_phosphorylation'):
+                             type_filter = 'is_phosphorylation',
+                             regenerate = False):
         """
         Collects all kinases from the kinase-substrate interactions
         loaded from databases. Creates a unique list and saves it to
         attribute `attr`.
         """
+        
+        if hasattr(self, attr) and not regenerate:
+            return None
         
         get_participant = getattr(self, get_participant)
         type_filter     = getattr(self, type_filter)
@@ -1661,7 +1662,7 @@ class Pex100(object):
                             dommot.ptm.residue.name,
                             dommot.ptm.residue.number)
     
-    def kinase_psite_adj(self):
+    def kinase_psite_adj(self, regenerate = False):
         """
         Creates and adjacency matrix of kinases and target phosphorylation
         sites, based on database data. The matrix is a `pandas.DataFrame`
@@ -1672,6 +1673,17 @@ class Pex100(object):
         relationships which will be useful later to query the targets
         of kinases.
         """
+        
+        if (
+            hasattr(self, 'dsetKinPsite') and
+            hasattr(self, 'dsetKinAllPsite') and
+            not regenerate
+        ):
+            return None
+        
+        self.collect_participants('lAllKinases', regenerate = regenerate)
+        self.collect_participants('lAllPsites', 'get_substrate_psite',
+                                  regenerate = regenerate)
         
         self.dsetKinPsite    = {}
         self.dsetKinAllPsite = {}
@@ -1730,7 +1742,7 @@ class Pex100(object):
                         lambda row:
                             (
                                 self.psite_from_fc_row(row), # psite
-                                row[8] # fold change
+                                row[9] # fold change
                             ),
                         fctab
                     )
@@ -1821,6 +1833,10 @@ class Pex100(object):
         if hasattr(self, 'dsetPsiteKin') and not regenerate:
             return None
         
+        self.collect_participants('lAllKinases', regenerate = regenerate)
+        self.collect_participants('lAllPsites', 'get_substrate_psite',
+                                  regenerate = regenerate)
+        
         self.dsetPsiteKin = {}
         
         for kinase, psites in iteritems(self.dsetKinPsite):
@@ -1870,6 +1886,8 @@ class Pex100(object):
         
         if hasattr(self, 'ddRegSites') and not _reload:
             return None
+        
+        self.kinase_psite_adj()
         
         raw = (
             pypath.dataio.regsites_one_organism(organism = self.ncbi_tax_id)
@@ -2211,7 +2229,7 @@ class Pex100(object):
             
             fname = self.fnFcTopCommon % std
             
-            sys.stdout.write('\tWriting to `%s`.\n' % fname)
+            sys.stdout.write('\t:: Writing to `%s`.\n' % fname)
             
             self.table_to_file(self.daFcTop[std], fname, lHdr)
     
@@ -2504,10 +2522,13 @@ class Pex100(object):
             )
         )
     
-    def read_functional_categories(self):
+    def read_functional_categories(self, reread = False):
         """
         Reads a set of functional categories defined by GO terms.
         """
+        
+        if hasattr(self, 'dsetFuncCat') and not reread:
+            return None
         
         self.dsetFuncCat = {}
         
@@ -2570,6 +2591,9 @@ class Pex100(object):
         """
         Compiles an array of functional annotations.
         """
+        
+        self.read_functional_categories()
+        
         arr    = list(self.daUniqueFcTable['none'].values())[0]
         cats   = sorted(self.dsetFuncCat.keys())
         llFunc = []
