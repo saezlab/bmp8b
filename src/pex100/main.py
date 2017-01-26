@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#  This file is part of the `bmp8` Python module
+#  This file is part of the `pex100` Python module
 #
 #  Copyright (c) 2016-2017 - EMBL-EBI
 #

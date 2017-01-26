@@ -161,3 +161,47 @@ print(p1, vp=viewport(0.8, 1.0, x=.4, y=.5))
 print(p3, vp=viewport(0.2, 1.076, x=0.88, y=0.498))
 dev.off()
 
+### plotting functional annotations
+
+func <- read.table('functional.csv', sep = '\t', header = TRUE)
+
+p4 <- ggplot(func, aes(y = label, fill = value, x = category)) +
+    facet_grid(. ~ func) +
+    geom_tile(aes(fill = value)) +
+    scale_fill_gradient(low = 'white', high = '#333333') +
+    xlab('Functional annotations') +
+    ylab('Phosphorylation site') +
+    theme(
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, size = 9, hjust = 1),
+        axis.text.y = element_text(size = 7)
+        )
+
+ggsave('gg_func_table.pdf', device = cairo_pdf, width = 5, height = 48)
+
+### now with only the "top 100"
+
+headfunc <- func[func$label %in% rownames(dfheadfctop),]
+headfunc$label <- factor(headfunc$label, levels = onames)
+
+p4 <- ggplot(headfunc, aes(y = label, fill = value, x = category)) +
+facet_grid(. ~ func) +
+geom_tile(aes(fill = value)) +
+scale_fill_gradient(low = 'white', high = '#333333') +
+xlab('Functional annotations') +
+ylab('Phosphorylation site') +
+theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.background = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size = 9, hjust = 1),
+    axis.text.y = element_text(size = 7)
+    )
+
+ggsave('gg_func_table_dendro-order.pdf', device = cairo_pdf, width = 5, height = 12)
