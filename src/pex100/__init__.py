@@ -17,7 +17,7 @@
 
 import os as _os
 
-from bmp8.main import *
+from pex100.main import *
 
 _ROOT = _os.path.abspath(_os.path.dirname(__file__))
 
