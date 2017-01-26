@@ -8,9 +8,9 @@ import numpy as np
 import itertools
 import collections
 
-import bmp8
+import pex100
 
-b = bmp8.Bmp8(ncbi_tax_id = 9606)
+b = pex100.Pex100(ncbi_tax_id = 9606)
 b.init()
 b.combined_table(to_file = True)
 b.fc_table(to_file = True)
