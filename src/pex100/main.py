@@ -1036,6 +1036,9 @@ class Pex100(object):
             dCtrlPratio = {'none': get_pratio(self.aSignalData,
                                               ckey, pkey, dDataLnum, 0)}
             
+            # get the unique label
+            label = self.antibody_id_to_name(annot[5])
+            
             # phosphorylation ratios for each standards
             for stdshort in ctrls.keys():
                 
@@ -1067,7 +1070,7 @@ class Pex100(object):
                         annot[3],
                         annot[4],
                         group,
-                        self.antibody_id_to_name(annot[5]),
+                        label,
                         annot[6],
                         phos,
                         self.aCvarData[dDataLnum[dkey],cnum], # CV treatment
@@ -2375,10 +2378,13 @@ class Pex100(object):
         
         self.plotVenn = plot
     
-    def antibody_id_to_name(self, aid):
+    def antibody_id_to_name(self, aid, unique = True):
         """
         For one antibody ID returns the protein names and residues
         as a human readable name.
+        If ``unique``, it uses a counter and appends an additional
+        number in parentheses to make a series of labels unique.
+        The counter is under attribute ``cntrUniqueLabels``.
         """
         regsymbol = re.compile(r'([A-Z0-9]*?)([0-9]*[A-Z]?$)')
         repost = re.compile(r'([0-9]*)([A-Z]*)')
@@ -2468,11 +2474,12 @@ class Pex100(object):
             )
         )
         
-        # labels must be unique
-        self.cntrUniqueLabels.update([label])
-        
-        if self.cntrUniqueLabels[label] > 1:
-            label = '%s(%u)' % (label, self.cntrUniqueLabels[label])
+        if unique:
+            # labels must be unique
+            self.cntrUniqueLabels.update([label])
+            
+            if self.cntrUniqueLabels[label] > 1:
+                label = '%s(%u)' % (label, self.cntrUniqueLabels[label])
         
         return label
     
