@@ -106,36 +106,21 @@ for(fn in levels(func$func)){
 
 levels(func$func) <- newlevels
 
-combined_plot(hheatmap = .9584,
-              wheatmap = .38,
-              xheatmap = .2,
-              yheatmap = .48,
-              hannotat = .9154,
-              wannotat = .3,
-              xannotat = .502,
-              yannotat = .5194,
-              hdendrog = .9297,
-              wdendrog = .2,
-              xdendrog = .75,
-              ydendrog = .5252,
-              hpaper   = 14,
-              wpaper   = 8)
-
 combined_plot <- function(signs = TRUE,
                           hheatmap = .9584,
-                          wheatmap = .4,
+                          wheatmap = .38,
                           xheatmap = .2,
                           yheatmap = .48,
-                          hannotat = .9684,
+                          hannotat = .9154,
                           wannotat = .3,
-                          xannotat = .52,
-                          yannotat = .4992,
-                          hdendrog = .9684,
+                          xannotat = .502,
+                          yannotat = .5194,
+                          hdendrog = .9297,
                           wdendrog = .2,
-                          xdendrog = .88,
-                          ydendrog = .4992,
+                          xdendrog = .7435,
+                          ydendrog = .5252,
                           hpaper   = 14,
-                          wpaper   = 9){
+                          wpaper   = 8){
     
     if(signs){
         # here we drop all items where the effect sign is unknown
@@ -216,7 +201,8 @@ combined_plot <- function(signs = TRUE,
         axis.text.x = element_text(angle = 90, vjust = 0.5, size = 9, hjust = 1),
         axis.text.y = element_blank(),
         legend.position = 'none',
-        axis.ticks.y = element_blank()
+        axis.ticks.y = element_blank(),
+        panel.border = element_rect(color = '#777777', fill = NA, size = .1)
     )
     
     
@@ -247,6 +233,37 @@ combined_plot <- function(signs = TRUE,
     
     # end of block: using signs or not
 }
+
+combined_plot(hheatmap = .9584,
+              wheatmap = .38,
+              xheatmap = .2,
+              yheatmap = .48,
+              hannotat = .9154,
+              wannotat = .3,
+              xannotat = .502,
+              yannotat = .5194,
+              hdendrog = .9297,
+              wdendrog = .2,
+              xdendrog = .7435,
+              ydendrog = .5252,
+              hpaper   = 14,
+              wpaper   = 8)
+
+combined_plot(hheatmap = .9584,
+              wheatmap = .38,
+              xheatmap = .2,
+              yheatmap = .48,
+              hannotat = .9154,
+              wannotat = .3,
+              xannotat = .502,
+              yannotat = .5194,
+              hdendrog = .9297,
+              wdendrog = .2,
+              xdendrog = .7435,
+              ydendrog = .5252,
+              hpaper   = 14,
+              wpaper   = 8)
+
 
 ### plotting functional annotations (all)
 
