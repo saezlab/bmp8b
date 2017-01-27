@@ -120,10 +120,14 @@ get_func <- function(fname = 'functional.csv'){
 
 plot_dendrogram <- function(dendrodata){
     p <- ggplot(segment(dendrodata)) +
-        geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
+        geom_segment(aes(x = x, y = y, xend = xend, yend = yend), size = 0.1) +
         #scale_y_continuous(limits = c(0, 100)) +
-        scale_x_continuous(limits = c(0, 100)) +
-        coord_flip(xlim = c(0, 100)) +
+        scale_x_continuous(
+            #limits = c(0, 100)
+        ) +
+        coord_flip(
+            #xlim = c(0, 100
+        ) +
         theme_none
     
     return(p)
@@ -193,19 +197,6 @@ get_pdfname <- function(wfunc, signs, top){
     )
 }
 
-unique_labels <- function(func, fctop){
-    labels <- list()
-    for(i in seq(1, dim(fctop)[1])){
-        thislab <- as.character(fctop$label[i])
-        if(thislab %in% names(labels)){
-            
-            labels[[thislab]] <- labels[[thislab]] + 1
-        }else{
-            labels[[thislab]] <- 1
-        }
-    }
-}
-
 combined_plot <- function(fctop,
                           func,
                           top = 100,
@@ -247,6 +238,8 @@ combined_plot <- function(fctop,
     rownames(headfctop) <- rnames
     mheadfctop <- as.matrix(headfctop[,9:11])
     rownames(mheadfctop) <- rnames
+    
+    #return(mheadfctop)
     psites_dendro <- as.dendrogram(hclust(dist(mheadfctop / apply(abs(mheadfctop), 1, max))))
     ordr <- order.dendrogram(psites_dendro)
     oheadfctop <- mheadfctop[ordr,]
@@ -340,9 +333,10 @@ combined_plot <- function(fctop,
 fctop <- get_fctop()
 func <- get_func()
 
+# with effect signs
 combined_plot(fctop = fctop,
               func = func,
-              top = FALSE,
+              top = 100,
               hheatmap = .9584,
               wheatmap = .38,
               xheatmap = .2,
@@ -351,13 +345,14 @@ combined_plot(fctop = fctop,
               wannotat = .3,
               xannotat = .502,
               yannotat = .5194,
-              hdendrog = .9297,
+              hdendrog = .92,
               wdendrog = .2,
               xdendrog = .7435,
-              ydendrog = .5252,
+              ydendrog = .5295,
               hpaper   = 14,
               wpaper   = 8)
 
+# without considering effect signs
 combined_plot(fctop = fctop,
               func = func,
               top = 100,
@@ -370,13 +365,51 @@ combined_plot(fctop = fctop,
               wannotat = .3,
               xannotat = .502,
               yannotat = .5194,
-              hdendrog = .9297,
+              hdendrog = .92,
               wdendrog = .2,
               xdendrog = .7435,
-              ydendrog = .5252,
+              ydendrog = .5295,
               hpaper   = 14,
               wpaper   = 8)
 
+# all with effect signs
+combined_plot(fctop = fctop,
+                func = func,
+                top = FALSE,
+                hheatmap = .931,
+                wheatmap = .38,
+                xheatmap = .2,
+                yheatmap = .5049,
+                hannotat = .9154,
+                wannotat = .3,
+                xannotat = .502,
+                yannotat = .5194,
+                hdendrog = .975,
+                wdendrog = .2,
+                xdendrog = .7435,
+                ydendrog = .523,
+                hpaper   = 38,
+                wpaper   = 8)
+
+# all not using effect signs
+combined_plot(fctop = fctop,
+              func = func,
+              top = FALSE,
+              signs = FALSE,
+              hheatmap = .93125,
+              wheatmap = .38,
+              xheatmap = .2,
+              yheatmap = .5116,
+              hannotat = .9227,
+              wannotat = .3,
+              xannotat = .502,
+              yannotat = .5194,
+              hdendrog = .9978,
+              wdendrog = .2,
+              xdendrog = .7435,
+              ydendrog = .5215,
+              hpaper   = 70,
+              wpaper   = 8)
 
 ### plotting functional annotations (all)
 

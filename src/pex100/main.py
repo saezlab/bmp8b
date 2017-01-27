@@ -1319,7 +1319,7 @@ class Pex100(object):
             for tr, arr in iteritems(arrs):
                 
                 proteins = set(arr[:,0])
-                antibodies = set(map(lambda r: (r[5], r[6]), arr))
+                antibodies = set(map(lambda r: (r[2], r[6]), arr))
                 
                 daPTopFcTable[std][tr] = []
                 daUniqueFcTable[std][tr] = []
@@ -1337,7 +1337,8 @@ class Pex100(object):
                 
                 for ab in antibodies:
                     
-                    this_ab = arr[np.where(np.logical_and(arr[:,5] == ab[0], arr[:,6] == ab[1]))]
+                    this_ab = arr[np.where(np.logical_and(arr[:,2] == ab[0],
+                                                          arr[:,6] == ab[1]))]
                     
                     daUniqueFcTable[std][tr].append(this_ab[0,:])
                 
