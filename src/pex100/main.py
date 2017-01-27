@@ -1014,6 +1014,8 @@ class Pex100(object):
         # degree of freedom
         self.iDf = self.aPsiteAnnot.shape[0] - 1
         
+        self.cntrUniqueLabels = collections.Counter()
+        
         for i, annot in enumerate(self.aPsiteAnnot):
             
             uniprot = annot[0]
@@ -2450,7 +2452,7 @@ class Pex100(object):
                 )
             )
         
-        return (
+        label = (
             '%s-%s' % (
                 shorten_protein_names(set(itertools.chain(*proteins))),
                 '/'.join(
@@ -2465,6 +2467,14 @@ class Pex100(object):
                 )
             )
         )
+        
+        # labels must be unique
+        self.cntrUniqueLabels.update([label])
+        
+        if self.cntrUniqueLabels[label] > 1:
+            label = '%s(%u)' % (label, self.cntrUniqueLabels[label])
+        
+        return label
     
     ### Direct functional annotation
     #
