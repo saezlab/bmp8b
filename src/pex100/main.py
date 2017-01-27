@@ -2715,3 +2715,111 @@ class Pex100(object):
         self.aTidyFunc = np.vstack(result)
         
         self.table_to_file(self.aTidyFunc, self.fnFuncTidy, lHdr)
+    
+    def fc_list(self, psites, treatment, std = 'none'):
+        """
+        Returns fold change values in one treatment
+        for a list of phosphosites.
+        """
+        
+        tbl = self.daUniqueFcTable[std][treatment]
+        psites = np.array(list(psites))
+        
+        return np.abs(tbl[np.where(
+            np.in1d(tbl[:,5], psites, assume_unique = True)
+        )][:,9])
+    
+    def signed_fc_list(self, psites, treatment, std = 'none'):
+        """
+        Returns fold change values in one treatment
+        for phosphosites with signes corrected according to
+        the effect of each phosphosite.
+        """
+        
+        tbl = self.daUniqueFcTable[std][treatment]
+        psites = np.array(list(psites))
+        
+        have_sign = tbl[np.where(
+            np.in1d(tbl[np.where(tbl[:,7] != 0)][:,5], psites, assume_unique = True)
+        )]
+        
+        return have_sign[:,9] * have_sign[:,7]
+    
+    def fc_of_annotated_with(self, annotation, treatment,
+                             signs = False, std = 'none'):
+        """
+        Returns the FC values of from phosphosites in one treatment annotated
+        with a certain functional annotation.
+        """
+        setAllPsites = set(self.aTidyFunc[:,0])
+        fcmethod = 'signed_fc_list' if signs else 'fc_list'
+        
+        annotated = (
+            set(
+                self.aTidyFunc[
+                    np.where(
+                        np.logical_and(
+                            self.aTidyFunc[:,1] == annotation,
+                            self.aTidyFunc[:,3] > 0
+                        )
+                    )
+                ][:,0]
+            )
+        )
+        
+        return (
+            getattr(self, fcmethod)(annotated,
+                                    treatment, std = std),
+            getattr(self, fcmethod)(setAllPsites - annotated,
+                                    treatment, std = std)
+        )
+    
+    def functional_compare_fc(self, annotation, treatment,
+                              silent = False, return_result = False,
+                              signs = False,
+                              std = 'none'):
+        """
+        Performs a Mann-Whitney U-test between fold changes of phosphosites
+        annotated or not with certain functionality.
+        """
+        
+        aPos, aNeg = self.fc_of_annotated_with(annotation,
+                                               treatment,
+                                               signs = signs,
+                                               std = std)
+        
+        fUval, fPval = stats.mannwhitneyu(aPos, aNeg,
+                                          alternative = 'two-sided'
+                                          )
+        
+        bGreater = aPos.mean() > aNeg.mean()
+        
+        if not silent:
+            sys.stdout.write('\t:: In case of %s treatment, the fold changes'\
+                             ' of phosphosites involved in %s\n'\
+                             '\t   are %s %s; Mann-Whitney p = %.08f; n1 = %u, n2 = %u\n' % (
+                                treatment,
+                                annotation,
+                                ('significantly'
+                                 if fPval <= 0.05
+                                 else 'not significantly'),
+                                'greater' if bGreater else 'lower',
+                                fPval, len(aPos), len(aNeg)
+                            ))
+        
+        if return_result:
+            return fUval, fPval, bGreater
+    
+    def functional_compare_fcs(self, signs = False, std = 'none'):
+        """
+        Compares differences in fold changes across all functional annotations
+        and all treatments.
+        """
+        
+        for sAnnot in sorted(set(self.aTidyFunc[:,1])):
+            
+            for sTreat in sorted(self.daUniqueFcTable[std].keys()):
+                
+                self.functional_compare_fc(sAnnot, sTreat,
+                                           signs = signs, std = std)
+    
