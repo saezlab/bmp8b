@@ -285,6 +285,8 @@ class Pex100(object):
         self.kinact_top(threshold = 1.0, fname = 'kinact_top.tab')
         self.functional_array()
         self.tidy_functional_array()
+        self.functional_compare_fcs()
+        self.functional_compare_fcs(signs = True)
     
     def network(self, extra_proteins = [], edges_percentile = 50, pfile = None):
         """
@@ -2716,51 +2718,73 @@ class Pex100(object):
         
         self.table_to_file(self.aTidyFunc, self.fnFuncTidy, lHdr)
     
-    def fc_list(self, psites, treatment, std = 'none'):
+    def fc_list(self, psites, treatment, signs = False,
+                category = None, std = 'none'):
         """
         Returns fold change values in one treatment
-        for a list of phosphosites.
+        for a list of phosphosites, optionally with
+        signes corrected according to the effect of
+        each phosphosite.
         """
         
         tbl = self.daUniqueFcTable[std][treatment]
+        
+        link_methods = {
+            'kinases':   self.kinases_of_substrate,
+            'regulated': self.affected_by
+        }
+        
+        if category is not None and category != 'self':
+            tbl = tbl[
+                np.where(
+                    np.array(
+                        list(
+                            map(
+                                lambda r:
+                                    bool(len(
+                                        link_methods[category](
+                                            r[0], r[3], r[4]))),
+                                tbl
+                            )
+                        )
+                    )
+                )]
+        
         psites = np.array(list(psites))
         
-        return np.abs(tbl[np.where(
-            np.in1d(tbl[:,5], psites, assume_unique = True)
-        )][:,9])
-    
-    def signed_fc_list(self, psites, treatment, std = 'none'):
-        """
-        Returns fold change values in one treatment
-        for phosphosites with signes corrected according to
-        the effect of each phosphosite.
-        """
+        if signs:
+            have_sign = tbl[np.where(
+                np.in1d(tbl[np.where(tbl[:,7] != 0)][:,5], psites, assume_unique = True)
+            )]
+            
+            return have_sign[:,9] * have_sign[:,7]
         
-        tbl = self.daUniqueFcTable[std][treatment]
-        psites = np.array(list(psites))
-        
-        have_sign = tbl[np.where(
-            np.in1d(tbl[np.where(tbl[:,7] != 0)][:,5], psites, assume_unique = True)
-        )]
-        
-        return have_sign[:,9] * have_sign[:,7]
+        else:
+            return np.abs(tbl[np.where(
+                np.in1d(tbl[:,5], psites, assume_unique = True)
+            )][:,9])
     
     def fc_of_annotated_with(self, annotation, treatment,
-                             signs = False, std = 'none'):
+                             signs = False, category = None,
+                             std = 'none'):
         """
         Returns the FC values of from phosphosites in one treatment annotated
         with a certain functional annotation.
         """
+        if category is not None:
+            arr = self.aTidyFunc[np.where(self.aTidyFunc[:,2] == category)]
+        else:
+            arr = self.aTidyFunc
+        
         setAllPsites = set(self.aTidyFunc[:,0])
-        fcmethod = 'signed_fc_list' if signs else 'fc_list'
         
         annotated = (
             set(
-                self.aTidyFunc[
+                arr[
                     np.where(
                         np.logical_and(
-                            self.aTidyFunc[:,1] == annotation,
-                            self.aTidyFunc[:,3] > 0
+                            arr[:,1] == annotation,
+                            arr[:,3] > 0
                         )
                     )
                 ][:,0]
@@ -2768,15 +2792,16 @@ class Pex100(object):
         )
         
         return (
-            getattr(self, fcmethod)(annotated,
-                                    treatment, std = std),
-            getattr(self, fcmethod)(setAllPsites - annotated,
-                                    treatment, std = std)
+            self.fc_list(annotated, treatment,
+                         signs = signs, category = category, std = std),
+            self.fc_list(setAllPsites - annotated, treatment,
+                         signs = signs, category = category, std = std)
         )
     
     def functional_compare_fc(self, annotation, treatment,
                               silent = False, return_result = False,
                               signs = False,
+                              category = None,
                               std = 'none'):
         """
         Performs a Mann-Whitney U-test between fold changes of phosphosites
@@ -2786,6 +2811,7 @@ class Pex100(object):
         aPos, aNeg = self.fc_of_annotated_with(annotation,
                                                treatment,
                                                signs = signs,
+                                               category = category,
                                                std = std)
         
         fUval, fPval = stats.mannwhitneyu(aPos, aNeg,
@@ -2795,10 +2821,14 @@ class Pex100(object):
         bGreater = aPos.mean() > aNeg.mean()
         
         if not silent:
-            sys.stdout.write('\t:: In case of %s treatment, the fold changes'\
-                             ' of phosphosites involved in %s\n'\
-                             '\t   are %s %s; Mann-Whitney p = %.08f; n1 = %u, n2 = %u\n' % (
+            sys.stdout.write('\t[%s] In case of %s treatment, '\
+                             'looking at annotations of `%s`,\n'\
+                             '\t    the fold changes of phosphosites '\
+                             'involved in `%s`\n'\
+                             '\t    are %s %s; Mann-Whitney p = %.08f; n1 = %u, n2 = %u\n' % (
+                                'S' if fPval <= 0.05 else 'N',
                                 treatment,
+                                'all' if category is None else category,
                                 annotation,
                                 ('significantly'
                                  if fPval <= 0.05
@@ -2816,10 +2846,14 @@ class Pex100(object):
         and all treatments.
         """
         
-        for sAnnot in sorted(set(self.aTidyFunc[:,1])):
+        for category in [None, 'self', 'kinases', 'regulated']:
             
-            for sTreat in sorted(self.daUniqueFcTable[std].keys()):
+            for sAnnot in sorted(set(self.aTidyFunc[:,1])):
                 
-                self.functional_compare_fc(sAnnot, sTreat,
-                                           signs = signs, std = std)
+                for sTreat in sorted(self.daUniqueFcTable[std].keys()):
+                    
+                    self.functional_compare_fc(sAnnot, sTreat,
+                                            signs = signs,
+                                            category = category,
+                                            std = std)
     
