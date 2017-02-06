@@ -88,7 +88,7 @@ class Pex100(object):
                  fnFuncCat = 'func_annot_categories.tab',
                  fnFuncTidy = 'functional.csv',
                  fnKinactTop = 'kinact_top.tab',
-                 fnVennPlot = 'FC_Venn_%s.pdf',
+                 fnVennPlot = 'FC_Venn_%s_%s.pdf',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -2245,25 +2245,86 @@ class Pex100(object):
             
             self.table_to_file(self.daFcTop[std], fname, lHdr)
     
-    def top_fc_venn(self, threshold = 1.5,
-                    sign = lambda s: s != 0,
-                    title = ''):
+    def top_fc_venn(self, threshold = 1.0,
+                    sign = None,
+                    title = '',
+                    number_labels = False,
+                    figsize = [10, 10],
+                    adj = {},
+                    treatments = ['BMP8b', 'BMP8b_NE', 'NE']):
         """
         Creates a Venn diagram of the highest FCs by treatments.
+        
+        :param str,None sign: If None (default) effect signs are not
+                              considered. If `positive`, only stimulated
+                              if `negative` only inhibited sites used.
+        :param bool number_labels: If `True`, number of elements plotted
+                                   in each field of the diagram; otherwise
+                                   a list of protein names.
+        :param str title: The main title of the plot.
+        :param float threshold: The threshold for log2 fold change.
+                                Fold changes with lower absolute value are
+                                not considered.
+        :param list figsize: Figure size for matplotlib.
         """
         
+        def set_label_text(elements, color, field_id,
+                           number = False, _adj = (0.0, 0.0)):
+            
+            if number:
+                text = '%u' % len(elements)
+            else:
+                text = ', '.join(sorted(elements))
+            
+            label = plot['venn'].get_label_by_id(field_id)
+            
+            if label is not None:
+                
+                label.set_text(text)
+                label.set_wrap(True)
+                label.set_bbox({
+                    'facecolor': 'none',
+                    'edgecolor': color,
+                    'boxstyle': 'round,pad=1'
+                })
+                pos = label.get_position()
+                label.set_position((pos[0] + _adj[0],
+                                    pos[1] + _adj[1]))
+        
+        def get_adj(setkey):
+            return adj[setkey] if setkey in adj else (0.0, 0.0)
+        
+        treatments = sorted(treatments)
+        
+        if not hasattr(self, 'plotVenn'):
+            self.plotVenn = {}
+        
+        key = ('nosign' if sign is None else sign,
+               '%.02f' % threshold)
         self.dsetTopFc = {}
         plot  = {}
-        plot['fname'] = self.fnVennPlot % ('%.02f' % threshold)
+        plot['fname'] = self.fnVennPlot % key
         
-        for tr, arr in iteritems(self.daUniqueFcTable['none']):
+        for tr in treatments:
             
-            self.dsetTopFc[tr] = \
-                set(arr[np.where(np.logical_and(np.abs(arr[:,8]) >= threshold,
-                                                sign(np.sign(arr[:,8]))))[0], 1])
+            arr = self.daUniqueFcTable['none'][tr]
+            # we either select the 
+            if sign == 'positive':
+                arr = arr[np.where(arr[:,7] ==  1)[0], :]
+            elif sign == 'negative':
+                arr = arr[np.where(arr[:,7] == -1)[0], :]
+            
+            if sign is None:
+                values = np.abs(arr[:,9])
+            else:
+                values = arr[:,9] * arr[:,7]
+            
+            self.dsetTopFc[tr] = (
+                set(arr[np.where(values >= threshold)[0], 1])
+            )
         
         plot['pdf'] = mpl.backends.backend_pdf.PdfPages(plot['fname'])
-        plot['fig'] = mpl.figure.Figure(figsize = [12, 12])
+        plot['fig'] = mpl.figure.Figure(figsize = figsize)
         plot['cvs'] = mpl.backends.backend_pdf.FigureCanvasPdf(plot['fig'])
         plot['ax']  = plot['fig'].add_subplot(1, 1, 1)
         
@@ -2274,107 +2335,42 @@ class Pex100(object):
             ax = plot['ax']
         )
         
-        # BMP8b
-        plot['venn'].get_label_by_id('100').set_text(
-            ', '.join(sorted(
-                self.dsetTopFc['BMP8b'] -
-                self.dsetTopFc['BMP8b_NE'] -
-                self.dsetTopFc['NE']
-            )))
-        plot['venn'].get_label_by_id('100').set_wrap(True)
-        plot['venn'].get_label_by_id('100').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#CC5555',
-            'boxstyle': 'round,pad=1'
-        })
+        # only in one set
+        for tr, field_id, color in zip(
+            treatments,
+            ['100', '010', '001'],
+            ['#CC5555', '#55AA55', '#5555CC']):
+            
+            elements  = self.dsetTopFc[tr]
+            othertr   = set(treatments) - set([tr])
+            otherelem = set().union(*map(lambda otr: self.dsetTopFc[otr],
+                                         othertr))
+            elements = elements - otherelem
+            set_label_text(elements, color, field_id,
+                        number_labels, _adj = get_adj(tr))
+            plot[tr] = elements
         
-        # NE
-        plot['venn'].get_label_by_id('001').set_text(
-            ', '.join(sorted(
-                self.dsetTopFc['NE'] -
-                self.dsetTopFc['BMP8b_NE'] -
-                self.dsetTopFc['BMP8b']
-            )))
-        plot['venn'].get_label_by_id('001').set_wrap(True)
-        plot['venn'].get_label_by_id('001').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#5555CC',
-            'boxstyle': 'round,pad=1'
-        })
+        # intersections of 2 sets
+        for pair, field_id, color in zip(
+                itertools.combinations(treatments, 2),
+                ['110', '101', '011'],
+                ['#C0A055', '#C044C0', '#44A0C0']
+            ):
+            
+            other    = list(set(treatments) - set(pair))[0]
+            elements = set().union(*map(lambda tr: self.dsetTopFc[tr], pair))
+            elements = elements - self.dsetTopFc[other]
+            
+            set_label_text(elements, color, field_id,
+                           number_labels, _adj = get_adj('%s:%s' % pair))
+            
+            plot['%s:%s' % pair] = elements
         
-        # BMP8b_NE
-        plot['venn'].get_label_by_id('010').set_text(
-            ', '.join(sorted(
-                self.dsetTopFc['BMP8b_NE'] -
-                self.dsetTopFc['NE'] -
-                self.dsetTopFc['BMP8b']
-            )))
-        plot['venn'].get_label_by_id('010').set_wrap(True)
-        plot['venn'].get_label_by_id('010').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#55AA55',
-            'boxstyle': 'round,pad=1'
-        })
-        
-        # BMP8b & BMP8b_NE
-        plot['venn'].get_label_by_id('110').set_text(
-            ', '.join(sorted(
-                (self.dsetTopFc['BMP8b'] &
-                self.dsetTopFc['BMP8b_NE']) -
-                self.dsetTopFc['NE']
-            )))
-        plot['venn'].get_label_by_id('110').set_wrap(True)
-        plot['venn'].get_label_by_id('110').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#C0A055',
-            'boxstyle': 'round,pad=1'
-        })
-        
-        # BMP8b & NE
-        plot['venn'].get_label_by_id('101').set_text(
-            ', '.join(sorted(
-                (self.dsetTopFc['BMP8b'] &
-                self.dsetTopFc['NE']) -
-                self.dsetTopFc['BMP8b_NE']
-            )))
-        plot['venn'].get_label_by_id('101').set_wrap(True)
-        plot['venn'].get_label_by_id('101').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#C044C0',
-            'boxstyle': 'round,pad=1'
-        })
-        pos = plot['venn'].get_label_by_id('101').get_position()
-        plot['venn'].get_label_by_id('101').set_position((pos[0], pos[1] - 0.05))
-        
-        # BMP8b_NE & NE
-        plot['venn'].get_label_by_id('011').set_text(
-            ', '.join(sorted(
-                (self.dsetTopFc['BMP8b_NE'] &
-                self.dsetTopFc['NE']) -
-                self.dsetTopFc['BMP8b']
-            )))
-        plot['venn'].get_label_by_id('011').set_wrap(True)
-        plot['venn'].get_label_by_id('011').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#44A0C0',
-            'boxstyle': 'round,pad=1'
-        })
-        
-        # BMP8b & NE & BMP8b_NE
-        plot['venn'].get_label_by_id('111').set_text(
-            ', '.join(sorted(
-                (self.dsetTopFc['BMP8b'] &
-                self.dsetTopFc['NE']) -
-                self.dsetTopFc['BMP8b_NE']
-            )))
-        plot['venn'].get_label_by_id('111').set_wrap(True)
-        plot['venn'].get_label_by_id('111').set_bbox({
-            'facecolor': 'none',
-            'edgecolor': '#A088A0',
-            'boxstyle': 'round,pad=1'
-        })
-        pos = plot['venn'].get_label_by_id('111').get_position()
-        plot['venn'].get_label_by_id('111').set_position((pos[0], pos[1] + 0.05))
+        # intersection of all the 3
+        elements = set().union(*list(self.dsetTopFc.values()))
+        set_label_text(elements, '#A088A0', '111',
+                       number_labels, _adj = get_adj(':'.join(treatments)))
+        plot[':'.join(treatments)] = elements
         
         plot['ax'].set_title(title)
         plot['fig'].tight_layout()
@@ -2384,7 +2380,7 @@ class Pex100(object):
         plot['pdf'].close()
         plot['fig'].clf()
         
-        self.plotVenn = plot
+        self.plotVenn[key] = plot
     
     def antibody_id_to_name(self, aid, unique = True):
         """
