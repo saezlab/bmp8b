@@ -15,8 +15,9 @@ Installation
 Requirements
 ------------
 
-Requires xlrd, openpyxl, numpy, scipy, pandas, pypath and optionally kinact.
-For the latter 2 see https://github.com/saezlab/.
+Requires xlrd, openpyxl, numpy, scipy, pandas, pypath and optionally pysemsim
+and kinact. For pypath and kinact see https://github.com/saezlab/. For
+pysemsim see https://bitbucket.org/deeenes/pysemsim.
 Should work under Linux, other Unix and Windows, both in Python 2 and 3.
 
 Quick start
