@@ -1,0 +1,786 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Welcome to pex100’s documentation! &mdash; pex100 0.3.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="pex100 0.3.0 documentation" href="#"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="#" class="icon icon-home"> pex100
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <!-- Local TOC -->
+                <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to pex100&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#module-pex100.main">Reference</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="#">pex100</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="#">Docs</a> &raquo;</li>
+      
+    <li>Welcome to pex100&#8217;s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="welcome-to-pex100-s-documentation">
+<h1>Welcome to pex100&#8217;s documentation!<a class="headerlink" href="#welcome-to-pex100-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal"><span class="pre">pex100</span></code> is a Python module providing a complet data analysis workflow for
+PEX100 phosphoassay data. See details about the array here:
+<a class="reference external" href="http://www.fullmoonbio.com/product/phospho-explorer-antibody-array/">http://www.fullmoonbio.com/product/phospho-explorer-antibody-array/</a>.
+Many parts of the workflow can be easily adapted to any phosphorylation data,
+including phosphoproteomics. The module runs with both Python 2 and 3.
+Questions and bug reports: <a class="reference external" href="mailto:turei&#46;denes&#37;&#52;&#48;gmail&#46;com">turei<span>&#46;</span>denes<span>&#64;</span>gmail<span>&#46;</span>com</a>.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="module-pex100.main">
+<span id="reference"></span><h1>Reference<a class="headerlink" href="#module-pex100.main" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pex100.Pex100">
+<em class="property">class </em><code class="descclassname">pex100.</code><code class="descname">Pex100</code><span class="sig-paren">(</span><em>dirBase='..'</em>, <em>fnIdMapping='PEX100_Layout.csv'</em>, <em>fnXlsFullData='AssayData-Cambridge-Peirce-150515.xlsx'</em>, <em>fnCombined='bmp8_%s.csv'</em>, <em>fnFcTable='fc_%s_%s.csv'</em>, <em>fnFcTopTable='fctop_%s_%s.csv'</em>, <em>fnFcTopCommon='fctop_%s.csv'</em>, <em>fnFuncCat='func_annot_categories.tab'</em>, <em>fnFuncTidy='functional.csv'</em>, <em>fnKinactTop='kinact_top.tab'</em>, <em>ncbi_tax_id=10090</em>, <em>org_strict=True</em>, <em>flex_resnum=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pex100.Pex100.affected_by">
+<code class="descname">affected_by</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.affected_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.affected_by" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UniProt IDs of the interacting protein partners of the
+phosphorylated substrate which the phosphorylation event affects
+the substrate&#8217;s interaction with.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.antibody_id_to_name">
+<code class="descname">antibody_id_to_name</code><span class="sig-paren">(</span><em>aid</em>, <em>unique=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.antibody_id_to_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.antibody_id_to_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>For one antibody ID returns the protein names and residues
+as a human readable name.
+If <code class="docutils literal"><span class="pre">unique</span></code>, it uses a counter and appends an additional
+number in parentheses to make a series of labels unique.
+The counter is under attribute <code class="docutils literal"><span class="pre">cntrUniqueLabels</span></code>.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pex100.Pex100.array_to_lls">
+<em class="property">classmethod </em><code class="descname">array_to_lls</code><span class="sig-paren">(</span><em>arr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.array_to_lls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.array_to_lls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts numpy array to a list of lists of strings.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pex100.Pex100.array_to_string">
+<em class="property">classmethod </em><code class="descname">array_to_string</code><span class="sig-paren">(</span><em>arr</em>, <em>hdr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.array_to_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.array_to_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a numpy array and returns it as a string of tabular.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.collect_assay_psites">
+<code class="descname">collect_assay_psites</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.collect_assay_psites"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.collect_assay_psites" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collects all phosphosites included in the assay.
+Result saved to <cite>setAssayPsites</cite> attribute.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.collect_participants">
+<code class="descname">collect_participants</code><span class="sig-paren">(</span><em>attr</em>, <em>get_participant='get_kinase_uniprot'</em>, <em>type_filter='is_phosphorylation'</em>, <em>regenerate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.collect_participants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.collect_participants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collects all kinases from the kinase-substrate interactions
+loaded from databases. Creates a unique list and saves it to
+attribute <cite>attr</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.collect_proteins">
+<code class="descname">collect_proteins</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.collect_proteins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.collect_proteins" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compiles a list of all kinases and substrates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.combined_table">
+<code class="descname">combined_table</code><span class="sig-paren">(</span><em>to_file=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.combined_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.combined_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export a table with number of kinases for each substrate PTM.
+The table will be saved into <cite>daTable</cite> attribute, which is a
+dict of arrays.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>to_file</strong> (<em>bool</em>) &#8211; Whether to write table into file.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.create_ptms">
+<code class="descname">create_ptms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.create_ptms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.create_ptms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates PTM objects for each PTM on array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.disrupted_by">
+<code class="descname">disrupted_by</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.disrupted_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.disrupted_by" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UniProt IDs of the interacting protein partners of the
+phosphorylated substrate which the phosphorylation event disrupts
+the substrate&#8217;s interaction with.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.effect_as_int">
+<code class="descname">effect_as_int</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.effect_as_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.effect_as_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the unambiguous effect as an integer, either -1, 0 or 1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_data_frames">
+<code class="descname">fc_data_frames</code><span class="sig-paren">(</span><em>std='none'</em>, <em>colname='30min'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_data_frames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_data_frames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <cite>pandas.DataFrame</cite> to serve as input for <cite>kinact</cite>.
+Data frame contains phosphorylation sites and their fold changes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_diff_table">
+<code class="descname">fc_diff_table</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_diff_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_diff_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Orders proteins by fold change diff.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_list">
+<code class="descname">fc_list</code><span class="sig-paren">(</span><em>psites</em>, <em>treatment</em>, <em>signs=False</em>, <em>category=None</em>, <em>std='none'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns fold change values in one treatment
+for a list of phosphosites, optionally with
+signes corrected according to the effect of
+each phosphosite.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_of_annotated_with">
+<code class="descname">fc_of_annotated_with</code><span class="sig-paren">(</span><em>annotation</em>, <em>treatment</em>, <em>signs=False</em>, <em>category=None</em>, <em>std='none'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_of_annotated_with"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_of_annotated_with" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the FC values of from phosphosites in one treatment annotated
+with a certain functional annotation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_table">
+<code class="descname">fc_table</code><span class="sig-paren">(</span><em>to_file=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates tables with fold changes, and exports to files optionally.
+Calculates z-scores, p-values and t-values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_table_to_file">
+<code class="descname">fc_table_to_file</code><span class="sig-paren">(</span><em>unique=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_table_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_table_to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes FC tables to files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.fc_top_table">
+<code class="descname">fc_top_table</code><span class="sig-paren">(</span><em>unique=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_top_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_top_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes FC values sorted by maximum difference into file.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pex100.Pex100.fold_change">
+<em class="property">static </em><code class="descname">fold_change</code><span class="sig-paren">(</span><em>val</em>, <em>ctrl</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fold_change"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fold_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the fold change as {value}/{control} if 
+{control} &lt; {value} and -1 * {control}/{value} otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.functional_array">
+<code class="descname">functional_array</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.functional_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.functional_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compiles an array of functional annotations.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.functional_compare_fc">
+<code class="descname">functional_compare_fc</code><span class="sig-paren">(</span><em>annotation</em>, <em>treatment</em>, <em>silent=False</em>, <em>return_result=False</em>, <em>signs=False</em>, <em>category=None</em>, <em>std='none'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.functional_compare_fc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.functional_compare_fc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a Mann-Whitney U-test between fold changes of phosphosites
+annotated or not with certain functionality.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.functional_compare_fcs">
+<code class="descname">functional_compare_fcs</code><span class="sig-paren">(</span><em>signs=False</em>, <em>std='none'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.functional_compare_fcs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.functional_compare_fcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compares differences in fold changes across all functional annotations
+and all treatments.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.get_arrays">
+<code class="descname">get_arrays</code><span class="sig-paren">(</span><em>llTable</em>, <em>vcol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_arrays" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns annotations and data as numpy arrays.
+Requires list-of-lists table and
+the column number where data values start.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pex100.Pex100.get_kinase_uniprot">
+<em class="property">static </em><code class="descname">get_kinase_uniprot</code><span class="sig-paren">(</span><em>dommot</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_kinase_uniprot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_kinase_uniprot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UniProt of the kinase from a
+pypath.intera.DomainMotif object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.get_network">
+<code class="descname">get_network</code><span class="sig-paren">(</span><em>keep_also=[]</em>, <em>step1=True</em>, <em>more_steps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a subnetwork based on certain criteria.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keep_also</strong> (<em>list</em>) &#8211; List of additional vertex names
+to include in core.</li>
+<li><strong>step1</strong> (<em>bool</em>) &#8211; Whether include not only direct
+links but one step indirect connections.</li>
+<li><strong>more_steps</strong> (<em>int</em>) &#8211; Include longer indirect connections. This
+param defines the number of mediator nodes.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.get_psite">
+<code class="descname">get_psite</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_psite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_psite" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a phosphosite string representation or substrate UniProt ID,
+residue name and number separately, returns an uniform tuple
+representation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.get_regulation_data">
+<code class="descname">get_regulation_data</code><span class="sig-paren">(</span><em>key</em>, <em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_regulation_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_regulation_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a piece of information from the regulatory sites
+data about one phosphorylation site.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.get_residues">
+<code class="descname">get_residues</code><span class="sig-paren">(</span><em>res</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_residues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_residues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matches residues in string,
+returns tuples of tuples with residue names and numbers.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.get_standards">
+<code class="descname">get_standards</code><span class="sig-paren">(</span><em>name</em>, <em>vcol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_standards"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_standards" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the values from the standards.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pex100.Pex100.get_substrate_psite">
+<em class="property">static </em><code class="descname">get_substrate_psite</code><span class="sig-paren">(</span><em>dommot</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.get_substrate_psite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.get_substrate_psite" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a <cite>pypath.intera.DomainMotif</cite> object, gets the identity of
+the phosphosite in a &#8216;UniProt_[residue][number]&#8217; format.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.has_terms_of_category">
+<code class="descname">has_terms_of_category</code><span class="sig-paren">(</span><em>protein</em>, <em>cat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.has_terms_of_category"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.has_terms_of_category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns if one <code class="docutils literal"><span class="pre">protein</span></code> has been annotated with any of
+the terms in one functional category <code class="docutils literal"><span class="pre">cat</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.idmapping">
+<code class="descname">idmapping</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.idmapping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.idmapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the idmapping table in order to translate the custom names
+to UniProts already at loading the table.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.idmapping2mouse">
+<code class="descname">idmapping2mouse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.idmapping2mouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.idmapping2mouse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a dict of names to mouse UniProt IDs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.induced_by">
+<code class="descname">induced_by</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.induced_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.induced_by" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UniProt IDs of the interacting protein partners of the
+phosphorylated substrate which the phosphorylation event induces
+the substrate&#8217;s interaction with.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.init_pypath">
+<code class="descname">init_pypath</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.init_pypath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.init_pypath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a PyPath object for mapping and network building.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pex100.Pex100.is_phosphorylation">
+<em class="property">static </em><code class="descname">is_phosphorylation</code><span class="sig-paren">(</span><em>dommot</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.is_phosphorylation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.is_phosphorylation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <cite>True</cite> if the type of an enzyme-substrate interaction
+is <cite>phosphorylation</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.kinact_analysis">
+<code class="descname">kinact_analysis</code><span class="sig-paren">(</span><em>std='none'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.kinact_analysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.kinact_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up and runs kinase activity analysis with <cite>kinact</cite>.
+Results saved to the <cite>dddfKinactResult</cite> attribute.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.kinact_top">
+<code class="descname">kinact_top</code><span class="sig-paren">(</span><em>fname=None</em>, <em>threshold=0.2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.kinact_top"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.kinact_top" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints a table with top results from <cite>kinact</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.kinase_psite_adj">
+<code class="descname">kinase_psite_adj</code><span class="sig-paren">(</span><em>regenerate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.kinase_psite_adj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.kinase_psite_adj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates and adjacency matrix of kinases and target phosphorylation
+sites, based on database data. The matrix is a <cite>pandas.DataFrame</cite>
+with values of 1.0 if the kinase phosphorylates the site otherwise
+<cite>numpy.nan</cite> values. The matrix is saved into the <cite>dfKinPsite</cite>
+attribute.
+This method also builds a dictionary of kinase-phosphosite
+relationships which will be useful later to query the targets
+of kinases.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.kinases_of_substrate">
+<code class="descname">kinases_of_substrate</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.kinases_of_substrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.kinases_of_substrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the kinases of a substrate.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.ll_table_slice">
+<code class="descname">ll_table_slice</code><span class="sig-paren">(</span><em>table</em>, <em>col</em>, <em>row</em>, <em>ncol=None</em>, <em>nrow=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.ll_table_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.ll_table_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a slice from a list-of-lists table, starting at (row, col),
+height and width of (nrow, ncol).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.load_go">
+<code class="descname">load_go</code><span class="sig-paren">(</span><em>_reload=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.load_go"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.load_go" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the GO biological process annotations
+if those haven&#8217;t been loaded or reload forced.
+Also loads the ontology graph as a
+<code class="docutils literal"><span class="pre">pysemsim.GOTrees</span></code> object. This is for lookup
+of ancestors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.load_ptms">
+<code class="descname">load_ptms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.load_ptms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.load_ptms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtains a list of all kinase-substrate interactions from
+Signor, phosphoELM, PhosphoSite and dbPTM.
+Creates a dict <cite>dPhosDb</cite> where (kinase, substrate) UniProts are keys
+and list of PTMs are values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.load_seq">
+<code class="descname">load_seq</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.load_seq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.load_seq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads protein sequences from UniProt.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pex100.Pex100.log2_fold_change">
+<em class="property">static </em><code class="descname">log2_fold_change</code><span class="sig-paren">(</span><em>fc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.log2_fold_change"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.log2_fold_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log2 transforms fold change value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.main">
+<code class="descname">main</code><span class="sig-paren">(</span><em>network=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads and preprocesses all input data.
+Runs the whole data processing and analysis and exports files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.mousedict">
+<code class="descname">mousedict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.mousedict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.mousedict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads human to mouse mapping from HomoloGene.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.network">
+<code class="descname">network</code><span class="sig-paren">(</span><em>extra_proteins=[]</em>, <em>edges_percentile=50</em>, <em>pfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads and processes the network.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.psite_effect">
+<code class="descname">psite_effect</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_effect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_effect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tuple of two boolean values.
+The first is True if the phosphorylation event has a
+stimulatory effect. The second is True if the phosphorylation
+has an inhibitory effect.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pex100.Pex100.psite_from_fc_row">
+<em class="property">static </em><code class="descname">psite_from_fc_row</code><span class="sig-paren">(</span><em>row</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_from_fc_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_from_fc_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns phosphosite string representation from a row of and FC array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.psite_inhibitory">
+<code class="descname">psite_inhibitory</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_inhibitory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_inhibitory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells if the phosphorylation site has a inhibitory effect.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.psite_inhibitory_unambiguous">
+<code class="descname">psite_inhibitory_unambiguous</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_inhibitory_unambiguous"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_inhibitory_unambiguous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True only if the phosphorylation site is inhibitory
+and not stimulatory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.psite_kinase_adj">
+<code class="descname">psite_kinase_adj</code><span class="sig-paren">(</span><em>regenerate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_kinase_adj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_kinase_adj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a dict between psites and kinases.
+This is for the opposite way lookup as <cite>dsetKinPsite</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.psite_stimulatory">
+<code class="descname">psite_stimulatory</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_stimulatory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_stimulatory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells if the phosphorylation site has a stimulatory effect.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.psite_stimulatory_unambiguous">
+<code class="descname">psite_stimulatory_unambiguous</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.psite_stimulatory_unambiguous"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.psite_stimulatory_unambiguous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True only if the phosphorylation site is stimulatory
+and not inhibitory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.ptms_lookup">
+<code class="descname">ptms_lookup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.ptms_lookup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.ptms_lookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Looks up the PTMs on array in the databases data.
+Creates list with kinase-substrate interactions
+targeting the substrates on array.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.ratio_having_terms_of_category">
+<code class="descname">ratio_having_terms_of_category</code><span class="sig-paren">(</span><em>proteins</em>, <em>cat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.ratio_having_terms_of_category"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.ratio_having_terms_of_category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the ratio of the proteins in list <code class="docutils literal"><span class="pre">proteins</span></code>
+that have been annotated with any terms in category <code class="docutils literal"><span class="pre">cat</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_coeffvar">
+<code class="descname">read_coeffvar</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_coeffvar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_coeffvar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads coefficient of variation values for each pair of spots.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_data">
+<code class="descname">read_data</code><span class="sig-paren">(</span><em>name</em>, <em>col</em>, <em>row</em>, <em>ncol</em>, <em>nrow</em>, <em>vcol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a data table with its annotations.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_functional_categories">
+<code class="descname">read_functional_categories</code><span class="sig-paren">(</span><em>reread=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_functional_categories"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_functional_categories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a set of functional categories defined by GO terms.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_idmapping">
+<code class="descname">read_idmapping</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_idmapping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_idmapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the mapping between the assay custom names and
+standard IDs (UniProt and Entrez Gene).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_normalized">
+<code class="descname">read_normalized</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_normalized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_normalized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the values normalized to median.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_organism_specificities">
+<code class="descname">read_organism_specificities</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_organism_specificities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_organism_specificities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the organism specificities of the assay probes.
+These are either for human, mouse, rat, or any combination of these.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_psites_diffs">
+<code class="descname">read_psites_diffs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_psites_diffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_psites_diffs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the measured values for each phosphosite at each condition.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_raw">
+<code class="descname">read_raw</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the full xls table.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_signals">
+<code class="descname">read_signals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_signals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_signals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the mean of duplicates signal values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_tables">
+<code class="descname">read_tables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_tables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads all data tables.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.read_xls">
+<code class="descname">read_xls</code><span class="sig-paren">(</span><em>xls_file</em>, <em>sheet=0</em>, <em>csv_file=None</em>, <em>return_table=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.read_xls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.read_xls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic function to read MS Excel XLS file. Converts one sheet
+to CSV, or returns as a list of lists</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.regulatory_sites">
+<code class="descname">regulatory_sites</code><span class="sig-paren">(</span><em>_reload=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.regulatory_sites"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.regulatory_sites" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the PhosphoSitePlus regulatory sites data.
+Data about the phosphorylation sites on the assay
+is saved to <cite>ddRegSites</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.set_path">
+<code class="descname">set_path</code><span class="sig-paren">(</span><em>fname</em>, <em>attr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.set_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.set_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the path to a file in basedir.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.sparsen_network">
+<code class="descname">sparsen_network</code><span class="sig-paren">(</span><em>perc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.sparsen_network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.sparsen_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a portion of the edges based on certain conditions.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pex100.Pex100.table_to_file">
+<em class="property">classmethod </em><code class="descname">table_to_file</code><span class="sig-paren">(</span><em>arr</em>, <em>fname</em>, <em>hdr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.table_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.table_to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes contents of an array into file with header optionally.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.targets_of_kinase">
+<code class="descname">targets_of_kinase</code><span class="sig-paren">(</span><em>kinase_uniprot</em>, <em>on_assay=True</em>, <em>uniprots=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.targets_of_kinase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.targets_of_kinase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a set of one kinase&#8217;s targets.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kinase_uniprot</strong> (<em>str</em>) &#8211; The UniProt ID of the kinase.</li>
+<li><strong>on_assay</strong> (<em>bool</em>) &#8211; Return the targets only on the assay,
+or all from the databases.</li>
+<li><strong>uniprots</strong> (<em>bool</em>) &#8211; Return UniProts, or GeneSymbols otherwise.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.terms_of_category">
+<code class="descname">terms_of_category</code><span class="sig-paren">(</span><em>protein</em>, <em>cat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.terms_of_category"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.terms_of_category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the terms in one functional category <code class="docutils literal"><span class="pre">cat</span></code>
+one <code class="docutils literal"><span class="pre">protein</span></code> has been annotated with.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.terms_with_ancestors">
+<code class="descname">terms_with_ancestors</code><span class="sig-paren">(</span><em>protein</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.terms_with_ancestors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.terms_with_ancestors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all GO terms of one <code class="docutils literal"><span class="pre">protein</span></code> including all their
+ancestors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.tidy_functional_array">
+<code class="descname">tidy_functional_array</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.tidy_functional_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.tidy_functional_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a tidy array from the functional data and exports it to file.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pex100.Pex100.to_string">
+<em class="property">classmethod </em><code class="descname">to_string</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.to_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.to_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts simple values to strings a uniform way.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pex100.Pex100.top_fc_venn">
+<code class="descname">top_fc_venn</code><span class="sig-paren">(</span><em>threshold=1.5</em>, <em>fname='FC_Venn.pdf'</em>, <em>sign=&lt;function Pex100.&lt;lambda&gt;&gt;</em>, <em>title=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.top_fc_venn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.top_fc_venn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Venn diagram of the highest FCs by treatments.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Dénes Türei.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
