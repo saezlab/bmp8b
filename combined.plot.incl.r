@@ -129,7 +129,7 @@ get_pdfname <- function(wfunc, signs, top){
             'gg_heatmap_dendro',
             ifelse(wfunc, '_func', ''),
             ifelse(signs, '_effect-signs', ''),
-            ifelse(top, '', '_all'),
+            ifelse(top, sprintf('_%d', top), '_all'),
             '.pdf',
             sep = ''
         )

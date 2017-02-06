@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Denes Turei EMBL-EBI 2017
+# turei.denes@gmail.com
+
 rm -f src/*.pyc
 rm -f src/pex100/*.pyc
 rm -rf src/pex100.egg-info

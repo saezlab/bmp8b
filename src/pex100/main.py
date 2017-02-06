@@ -88,6 +88,7 @@ class Pex100(object):
                  fnFuncCat = 'func_annot_categories.tab',
                  fnFuncTidy = 'functional.csv',
                  fnKinactTop = 'kinact_top.tab',
+                 fnVennPlot = 'FC_Venn_%s.pdf',
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
@@ -103,6 +104,7 @@ class Pex100(object):
         self.set_path(fnFuncCat, 'fnFuncCat')
         self.set_path(fnFuncTidy, 'fnFuncTidy')
         self.set_path(fnKinactTop, 'fnKinactTop')
+        self.set_path(fnVennPlot, 'fnVennPlot')
         
         self.reAnnot = re.compile(r'([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) '\
             r'\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)')
@@ -285,7 +287,9 @@ class Pex100(object):
         self.kinact_top(threshold = 1.0, fname = 'kinact_top.tab')
         self.functional_array()
         self.tidy_functional_array()
+        sys.stdout.write('\t:: Tests without effect sign:\n')
         self.functional_compare_fcs()
+        sys.stdout.write('\t:: Tests with effect sign:\n')
         self.functional_compare_fcs(signs = True)
     
     def network(self, extra_proteins = [], edges_percentile = 50, pfile = None):
@@ -2241,7 +2245,7 @@ class Pex100(object):
             
             self.table_to_file(self.daFcTop[std], fname, lHdr)
     
-    def top_fc_venn(self, threshold = 1.5, fname = 'FC_Venn.pdf',
+    def top_fc_venn(self, threshold = 1.5,
                     sign = lambda s: s != 0,
                     title = ''):
         """
@@ -2249,15 +2253,16 @@ class Pex100(object):
         """
         
         self.dsetTopFc = {}
-        plot = {}
+        plot  = {}
+        plot['fname'] = self.fnVennPlot % ('%.02f' % threshold)
         
         for tr, arr in iteritems(self.daUniqueFcTable['none']):
             
             self.dsetTopFc[tr] = \
-                set(arr[np.where(np.logical_and(np.abs(arr[:,5]) >= threshold,
-                                                sign(np.sign(arr[:,5]))))[0], 1])
+                set(arr[np.where(np.logical_and(np.abs(arr[:,8]) >= threshold,
+                                                sign(np.sign(arr[:,8]))))[0], 1])
         
-        plot['pdf'] = mpl.backends.backend_pdf.PdfPages(fname)
+        plot['pdf'] = mpl.backends.backend_pdf.PdfPages(plot['fname'])
         plot['fig'] = mpl.figure.Figure(figsize = [12, 12])
         plot['cvs'] = mpl.backends.backend_pdf.FigureCanvasPdf(plot['fig'])
         plot['ax']  = plot['fig'].add_subplot(1, 1, 1)
