@@ -2380,7 +2380,7 @@ class Pex100(object):
             ):
             
             other    = list(set(treatments) - set(pair))[0]
-            elements = set().intersection(*map(lambda tr: self.dsetTopFc[tr], pair))
+            elements = set.intersection(*map(lambda tr: self.dsetTopFc[tr], pair))
             elements = elements - self.dsetTopFc[other]
             
             set_label_text(elements, color, field_id,
@@ -2389,7 +2389,7 @@ class Pex100(object):
             plot['%s:%s' % pair] = elements
         
         # intersection of all the 3
-        elements = set().intersection(*list(self.dsetTopFc.values()))
+        elements = set.intersection(*list(self.dsetTopFc.values()))
         set_label_text(elements, '#A088A0', '111',
                        number_labels, _adj = get_adj(':'.join(treatments)))
         plot[':'.join(treatments)] = elements
