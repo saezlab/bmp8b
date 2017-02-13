@@ -92,6 +92,22 @@ class Pex100(object):
                  ncbi_tax_id = 10090,
                  org_strict = True,
                  flex_resnum = True):
+        """
+        This is the main class of the module representing an analysis
+        on a set of phosphorylation sites across multiple samples.
+        It provides various methods and workflows for its analysis.
+        
+        :param str dirBase: The base directory.
+        :param str fnIdMapping: The ID mapping (layout) file of the assay.
+                                This is necessary because PEX100 assay
+                                uses non-standard names by default.
+        :param str fnXlsFullData: The phosphoassay data in xls file.
+        :param int ncbi_tax_id: The NCBI Taxonomy ID of the species to
+                                work with. Not necessary to provide your
+                                experimental organism here, it is safe to
+                                let it be human even if the data is from mice.
+    
+        """
         
         self.dirBase = dirBase
         
@@ -2251,7 +2267,8 @@ class Pex100(object):
                     number_labels = False,
                     figsize = [10, 10],
                     adj = {},
-                    treatments = ['BMP8b', 'BMP8b_NE', 'NE']):
+                    treatments = ['BMP8b', 'BMP8b_NE', 'NE'],
+                    label_size = None):
         """
         Creates a Venn diagram of the highest FCs by treatments.
         
@@ -2290,11 +2307,16 @@ class Pex100(object):
                 pos = label.get_position()
                 label.set_position((pos[0] + _adj[0],
                                     pos[1] + _adj[1]))
+                if label_size is not None:
+                    label.set_size(label_size)
+                
+                label_artists.append(label)
         
         def get_adj(setkey):
             return adj[setkey] if setkey in adj else (0.0, 0.0)
         
         treatments = sorted(treatments)
+        label_artists = []
         
         if not hasattr(self, 'plotVenn'):
             self.plotVenn = {}
@@ -2358,7 +2380,7 @@ class Pex100(object):
             ):
             
             other    = list(set(treatments) - set(pair))[0]
-            elements = set().union(*map(lambda tr: self.dsetTopFc[tr], pair))
+            elements = set().intersection(*map(lambda tr: self.dsetTopFc[tr], pair))
             elements = elements - self.dsetTopFc[other]
             
             set_label_text(elements, color, field_id,
@@ -2367,16 +2389,18 @@ class Pex100(object):
             plot['%s:%s' % pair] = elements
         
         # intersection of all the 3
-        elements = set().union(*list(self.dsetTopFc.values()))
+        elements = set().intersection(*list(self.dsetTopFc.values()))
         set_label_text(elements, '#A088A0', '111',
                        number_labels, _adj = get_adj(':'.join(treatments)))
         plot[':'.join(treatments)] = elements
         
         plot['ax'].set_title(title)
-        plot['fig'].tight_layout()
-        plot['fig'].subplots_adjust(top=0.92)
+        plot['fig'].tight_layout(pad = 1.0, rect = (0.1, 0.1, 0.8, 0.8))
+        #plot['fig'].subplots_adjust(bottom = 0.2, top = 0.8, right = 0.8, left = 0.2)
         plot['cvs'].draw()
         plot['cvs'].print_figure(plot['pdf'])
+                                 #bbox_inches = 'tight',
+                                 #bbox_extra_artists = label_artists)
         plot['pdf'].close()
         plot['fig'].clf()
         

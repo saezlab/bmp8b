@@ -13,18 +13,33 @@ import pex100
 b = pex100.Pex100(ncbi_tax_id = 9606)
 b.main()
 b.top_fc_venn(
-    threshold = 0.5,
+    threshold = np.log2(1.5),
     sign = 'positive',
     figsize = [10,10],
     adj = {
         'BMP8b:BMP8b_NE': (0.0, .1),
-        'BMP8b:BMP8b_NE:NE': (-.02, .05),
-        'BMP8b_NE:NE': (-.01, 0.01),
-        'BMP8b:NE': (.01, -.03),
+        'BMP8b:BMP8b_NE:NE': (0.0, .05),
+        'BMP8b_NE:NE': (0.0, 0.034),
+        'BMP8b:NE': (0.0, -.1),
         'BMP8b_NE': (0.0, -.02)
     }
 )
 
+b.top_fc_venn(
+    threshold = np.log2(1.5),
+    sign = 'negative',
+    figsize = [10,10],
+    adj = {
+        'BMP8b:BMP8b_NE': (.55, .09),
+        'BMP8b:BMP8b_NE:NE': (.0, .05),
+        'BMP8b_NE:NE': (.01, 0.014),
+        'BMP8b:NE': (.01, -.03),
+        'BMP8b_NE': (0.0, 0.04)
+    }
+)
+
+b.top_fc_venn(threshold = 0.5, figsize = [10,10], number_labels = True, label_size = 18)
+)
 
 b.workflow()
 
