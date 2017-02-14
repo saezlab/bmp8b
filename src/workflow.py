@@ -38,9 +38,10 @@ b.top_fc_venn(
     }
 )
 
-b.top_fc_venn(threshold = 0.5, figsize = [10,10], number_labels = True, label_size = 18)
-)
+b.top_fc_venn(threshold = np.log2(1.5), figsize = [10,10], number_labels = True, label_size = 18)
+b.top_fc_venn(threshold = np.log2(1.5), figsize = [10,10])
 
+# 
 b.workflow()
 
 b.combined_table(to_file = True)

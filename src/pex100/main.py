@@ -84,6 +84,7 @@ class Pex100(object):
                  fnCombined = 'bmp8_%s.csv',
                  fnFcTable = 'fc_%s_%s.csv',
                  fnFcTopTable = 'fctop_%s_%s.csv',
+                 fnFcUTable = 'fctop_uniqp_%s_%s.csv',
                  fnFcTopCommon = 'fctop_%s.csv',
                  fnFuncCat = 'func_annot_categories.tab',
                  fnFuncTidy = 'functional.csv',
@@ -115,6 +116,7 @@ class Pex100(object):
         self.set_path(fnIdMapping, 'fnIdMapping')
         self.set_path(fnCombined, 'fnCombined')
         self.set_path(fnFcTable, 'fnFcTable')
+        self.set_path(fnFcUTable, 'fnFcUTable')
         self.set_path(fnFcTopTable, 'fnFcTopTable')
         self.set_path(fnFcTopCommon, 'fnFcTopCommon')
         self.set_path(fnFuncCat, 'fnFuncCat')
@@ -1372,21 +1374,32 @@ class Pex100(object):
         
         if to_file:
             
-            self.fc_table_to_file(unique = True)
-            self.fc_table_to_file(unique = False)
+            self.fc_table_to_file(unique_proteins = True)
+            self.fc_table_to_file(unique_antibodies = True)
+            self.fc_table_to_file(unique_antibodies = False)
     
-    def fc_table_to_file(self, unique = True):
+    def fc_table_to_file(self,
+                         unique_antibodies = True,
+                         unique_proteins = False):
         """
         Writes FC tables to files.
         """
         
-        daFc = self.daUniqueFcTable if unique else self.daFcTable
+        daFc = (
+            self.daPTopFcTable if unique_proteins else
+            self.daUniqueFcTable if unique_antibodies else
+            self.daFcTable
+        )
         
         for std, arrs in iteritems(daFc):
             
             for tr, arr in iteritems(arrs):
                 
-                fname = self.fnFcTable if unique else self.fnFcTopTable
+                fname = (
+                    self.fnFcUTable if unique_proteins else
+                    self.fnFcTopTable if unique_antibodies else
+                    self.fnFcTable
+                )
                 fname = fname % (tr, std)
                 
                 sys.stdout.write('\t:: Writing to `%s`.\n' % fname)
@@ -2365,7 +2378,7 @@ class Pex100(object):
             
             elements  = self.dsetTopFc[tr]
             othertr   = set(treatments) - set([tr])
-            otherelem = set().union(*map(lambda otr: self.dsetTopFc[otr],
+            otherelem = set.union(*map(lambda otr: self.dsetTopFc[otr],
                                          othertr))
             elements = elements - otherelem
             set_label_text(elements, color, field_id,
@@ -2403,6 +2416,7 @@ class Pex100(object):
                                  #bbox_extra_artists = label_artists)
         plot['pdf'].close()
         plot['fig'].clf()
+        sys.stdout.write('\t:: Plot saved to `%s`.\n' % plot['fname'])
         
         self.plotVenn[key] = plot
     

@@ -19,6 +19,8 @@ library(grid)
 library(gridExtra)
 library(GSEABase)
 
+require(gplots)
+require(RColorBrewer)
 
 standard <- 'none'
 treatments <- c('NE', 'BMP8b', 'BMP8b_NE')
@@ -59,7 +61,7 @@ for(setpref in setspref){
         
         cat(paste('Working on', tr, setpref, '\n'))
         
-        infile <- paste(filespath, 'fc_', tr, '_', standard, '.csv', sep = '')
+        infile <- paste(filespath, 'fctop_uniqp_', tr, '_', standard, '.csv', sep = '')
         data <- read.table(infile, header = TRUE, sep = '\t')
         
         rownames(data) <- data$uniprot
@@ -86,10 +88,12 @@ for(setpref in setspref){
 
     for(tr in treatments){
         
-        cairo_pdf(filename = paste('pathways_heatmap_', setpref, '_', tr, '.pdf', sep = ''), onefile = TRUE, width = 12, height = 24, pointsize = 12)
+        cairo_pdf(filename = paste('pathways_heatmap_', setpref, '_', tr, '.pdf', sep = ''),
+                  onefile = TRUE, width = 12, height = 24, pointsize = 12)
         
             ch <- consensusHeatmap(result[[setpref]][[tr]], cutoff = 100, method = 'median',
-                                   ncharLabel = 60, cellnote = 'consensusScore', cex = 1, colorkey = FALSE)
+                                   ncharLabel = 60, cellnote = 'consensusScore',
+                                   cex = 1, colorkey = FALSE)
         
         dev.off()
         
@@ -102,3 +106,37 @@ for(setpref in setspref){
 }
 
 save.image(file = 'moregenesets.Rdata')
+
+####
+
+cairo_pdf(filename = paste('pathways_heatmap_', setpref, '_', tr, '.pdf', sep = ''),
+          onefile = TRUE, width = 12, height = 24, pointsize = 12)
+
+ch <- consensusHeatmap(result[[setpref]][[tr]], cutoff = 100, method = 'median',
+                        ncharLabel = 60, cellnote = 'consensusScore',
+                        cex = 1, colorkey = FALSE, plot = FALSE)
+
+dev.off()
+
+my_palette <- colorRampPalette(c("red", "black"))(n = 299)
+
+cairo_pdf(filename = paste('pathways_heatmap_g_', setpref, '_', tr, '.pdf', sep = ''),
+          onefile = TRUE, width = 12, height = 24, pointsize = 12)
+
+par(mgp=c(0, 0, 0))
+heatmap.2(ch$rankMat,
+          Colv = "NA",
+          dendrogram = 'row',
+          density.info = 'none',
+          key = FALSE,
+          col = my_palette,
+          margins =c(15,15),
+          notecol = '#CCCCCC',
+          cellnote = ch$rankMat,
+          sepwidth = c(0.01/dim(ch$rankMat)[1], 0.01/dim(ch$rankMat)[2]),
+          colsep = seq(dim(ch$rankMat)[2]),
+          rowsep = seq(dim(ch$rankMat)[1]),
+          sepcolor = 'white',
+          trace = 'none')
+
+dev.off()
