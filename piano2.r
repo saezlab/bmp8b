@@ -21,6 +21,7 @@ library(GSEABase)
 
 require(gplots)
 require(RColorBrewer)
+require(data.table)
 
 standard <- 'none'
 treatments <- c('NE', 'BMP8b', 'BMP8b_NE')
@@ -35,38 +36,38 @@ filespath <- ''
 
 ###
 
-result <- list()
+geneset.df <- function(geneset){
+    return(as.data.frame(cbind(geneIds(geneset), setName(geneset))))
+}
 
+###
+
+result <- list()
 genesets <- list()
+
 for(setpref in setspref){
     genesets <- c(genesets,
                     unlist(
-                        getGmt(con = paste(gmtpath, 'c2.cp.', setsfpost, sep = ''))
+                        getGmt(con = paste(gmtpath, setpref, '.', setsfpost, sep = ''))
                     )
                 )
 }
 
 gene_to_term <- NULL
 
-for(geneset in genesets){
-    
-    temp1 <- geneIds(geneset)
-    temp2 <- setName(geneset)
-    temp3 <- as.data.frame(cbind(temp1, rep(temp2, length(temp1))))
-    names(temp3) <- c('genesymbol', 'term')
-    gene_to_term <- rbind(gene_to_term, temp3)
-    
-}
+gene_to_term <- rbindlist(lapply(genesets, geneset.df))
+
+setnames(gene_to_term, c('genesymbol', 'term'))
 
 unip_to_gsym <- read.table(mapfile, header = FALSE, sep = '\t')
 colnames(unip_to_gsym) <- c('uniprot', 'genesymbol')
-gene_to_term <- merge(gene_to_term, unip_to_gsym, all = FALSE)
+gene_to_term <- merge(gene_to_term, unip_to_gsym, all = FALSE, by = 'genesymbol')
 
-geneSet <- loadGSC(gene_to_term[,c(3, 2)])
+geneSet <- loadGSC(gene_to_term[,c(3, 2), with = FALSE])
 
 for(tr in treatments){
     
-    cat(paste('Working on', tr, setpref, '\n'))
+    cat(paste('Working on', tr, '\n'))
     
     infile <- paste(filespath, 'fctop_uniqp_', tr, '_', standard, '.csv', sep = '')
     data <- read.table(infile, header = TRUE, sep = '\t')
@@ -77,14 +78,35 @@ for(tr in treatments){
     pval  <- data['pval']
     tval  <- data['tval']
     
-    gsaRes1 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'mean')
-    gsaRes2 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'median')
-    gsaRes3 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'sum')
-    gsaRes4 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'maxmean')
-    gsaRes5 <- runGSA(geneLevelStats = pval, directions = logfc, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'reporter')
-    gsaRes6 <- runGSA(geneLevelStats = pval, directions = logfc, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'tailStrength')
-    gsaRes7 <- runGSA(geneLevelStats = pval, directions = logfc, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'wilcoxon')
-    gsaRes8 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr', geneSetStat = 'page')
+    maxgssz <- dim(data)[1] / 3
+    
+    gsaRes1 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'mean', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes2 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'median', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes3 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'sum', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes4 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'maxmean', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes5 <- runGSA(geneLevelStats = pval, directions = logfc,
+                      gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'reporter', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes6 <- runGSA(geneLevelStats = pval, directions = logfc,
+                      gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'tailStrength', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes7 <- runGSA(geneLevelStats = pval, directions = logfc,
+                      gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'wilcoxon', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
+    gsaRes8 <- runGSA(tval, gsc = geneSet, adjMethod = 'fdr',
+                      geneSetStat = 'page', ncpus = 4,
+                      gsSizeLim = c(1, maxgssz))
     
     resList <- list(gsaRes1, gsaRes2, gsaRes3, gsaRes4, gsaRes5, gsaRes6, gsaRes7, gsaRes8)
     names(resList) <- c('mean', 'median', 'sum', 'maxmean', 'reporter', 'tailStrength', 'wilcoxon', 'page')

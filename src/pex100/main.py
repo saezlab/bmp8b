@@ -85,6 +85,7 @@ class Pex100(object):
                  fnFcTable = 'fc_%s_%s.csv',
                  fnFcTopTable = 'fctop_%s_%s.csv',
                  fnFcUTable = 'fctop_uniqp_%s_%s.csv',
+                 fnFcSUTable = 'fctop_uniqp_sign_%s_%s.csv',
                  fnFcTopCommon = 'fctop_%s.csv',
                  fnFuncCat = 'func_annot_categories.tab',
                  fnFuncTidy = 'functional.csv',
@@ -117,6 +118,7 @@ class Pex100(object):
         self.set_path(fnCombined, 'fnCombined')
         self.set_path(fnFcTable, 'fnFcTable')
         self.set_path(fnFcUTable, 'fnFcUTable')
+        self.set_path(fnFcSUTable, 'fnFcSUTable')
         self.set_path(fnFcTopTable, 'fnFcTopTable')
         self.set_path(fnFcTopCommon, 'fnFcTopCommon')
         self.set_path(fnFuncCat, 'fnFuncCat')
@@ -1261,6 +1263,7 @@ class Pex100(object):
         daFcTable       = {}
         daPTopFcTable   = {}
         daUniqueFcTable = {}
+        daPSTopFcTable  = {}
         
         for std, tbl in iteritems(self.daCombined):
             
@@ -1332,27 +1335,42 @@ class Pex100(object):
                     ))
         
         self.daFcTable = daFcTable
-        
+    
         # selecting the psite with lowest p-value for each protein
         
         for std, arrs in iteritems(self.daFcTable):
             
-            daUniqueFcTable[std] = {}
-            daPTopFcTable[std]   = {}
+            daUniqueFcTable[std]  = {} # this is unique for antibodies
+            daPTopFcTable[std]    = {} # this is unique for proteins
+            daPSTopFcTable[std]   = {} # this is unique for proteins
+                                       # and has signs adjusted
             
             for tr, arr in iteritems(arrs):
                 
                 proteins = set(arr[:,0])
                 antibodies = set(map(lambda r: (r[2], r[6]), arr))
                 
-                daPTopFcTable[std][tr] = []
+                daPTopFcTable[std][tr]   = []
                 daUniqueFcTable[std][tr] = []
+                daPSTopFcTable[std][tr]   = []
                 
                 for protein in proteins:
                     
                     this_protein = arr[np.where(arr[:,0] == protein)]
                     
                     imin = np.argmin(this_protein[:,10]) # the min p-value
+                    
+                    this_protein_signed = (
+                        this_protein[np.where(this_protein[:,7] != 0)]
+                    )
+                    
+                    if this_protein_signed.shape[0] > 0:
+                        
+                        # we have sign for at least one phosphosite
+                        simin = np.argmin(this_protein_signed[:,10])
+                        daPSTopFcTable[std][tr].append(
+                            this_protein_signed[simin,:]
+                        )
                     
                     # avoid duplicates -- only one per antibody
                     #if this_protein[imin, 5] not in antibodies:
@@ -1371,21 +1389,25 @@ class Pex100(object):
         
         self.daPTopFcTable   = daPTopFcTable
         self.daUniqueFcTable = daUniqueFcTable
+        self.daPSTopFcTable  = daPSTopFcTable
         
         if to_file:
             
             self.fc_table_to_file(unique_proteins = True)
+            self.fc_table_to_file(unique_proteins = True, signed = True)
             self.fc_table_to_file(unique_antibodies = True)
             self.fc_table_to_file(unique_antibodies = False)
     
     def fc_table_to_file(self,
                          unique_antibodies = True,
-                         unique_proteins = False):
+                         unique_proteins = False,
+                         signed = False):
         """
         Writes FC tables to files.
         """
         
         daFc = (
+            self.daPSTopFcTable if unique_proteins and signed else
             self.daPTopFcTable if unique_proteins else
             self.daUniqueFcTable if unique_antibodies else
             self.daFcTable
@@ -1396,6 +1418,7 @@ class Pex100(object):
             for tr, arr in iteritems(arrs):
                 
                 fname = (
+                    self.fnFcSUTable if unique_proteins and signed else
                     self.fnFcUTable if unique_proteins else
                     self.fnFcTopTable if unique_antibodies else
                     self.fnFcTable
@@ -2230,8 +2253,8 @@ class Pex100(object):
                     
                     tab[tr] = tab[tr][ordr,:]
         
-        self.fc_table_to_file(unique = True)
-        self.fc_table_to_file(unique = False)
+        self.fc_table_to_file(unique_antibodies = True)
+        self.fc_table_to_file(unique_antibodies = False)
     
     def fc_top_table(self, unique = True):
         """
