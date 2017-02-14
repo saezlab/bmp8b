@@ -1,5 +1,8 @@
 Python module `pex100`
 ======================
+
+**Repository moved to https://github.com/saezlab/pex100**
+
 This module implements a  phosphoassay data analyis workflow.
 In its current state, as data is unpublished, it is useless for the public.
 Data becomes available upon publication of the paper.
@@ -9,7 +12,7 @@ Installation
 
 .. code:: bash
     
-    pip install git+https://bitbucket.org/deeenes/pex100.git
+    pip install git+https://github.com/saezlab/pex100.git
 
 
 Requirements
