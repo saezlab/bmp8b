@@ -89,7 +89,7 @@ for(setpref in setspref){
     for(tr in treatments){
         
         cairo_pdf(filename = paste('pathways_heatmap_', setpref, '_', tr, '.pdf', sep = ''),
-                  onefile = TRUE, width = 12, height = 24, pointsize = 12)
+                  onefile = FALSE, width = 12, height = 24, pointsize = 12)
         
             ch <- consensusHeatmap(result[[setpref]][[tr]], cutoff = 100, method = 'median',
                                    ncharLabel = 60, cellnote = 'consensusScore',
