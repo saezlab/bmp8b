@@ -200,10 +200,10 @@ piano_plot <- function(result, tr, plotname, cols,
             ch <- transform(merge(ch, ch0, by = 0, all = TRUE),
                             row.names = Row.names, Row.names = NULL)
         }
-        mat <- as.matrix(ch)
-        colnames(mat) <- names(result)
+        fullmat <- as.matrix(ch)
+        colnames(fullmat) <- names(result)
         plotname2 <- as.character(dir_col)
-        mat <- mat[apply(mat, MARGIN = 1, function(x) any(x < cutoff)), ]
+        mat <- fullmat[apply(fullmat, MARGIN = 1, function(x) any(x < cutoff)), ]
     }else{
         
         ch <- do.call('consensusHeatmap', c(list(resList = result[[tr]]),
@@ -262,6 +262,8 @@ piano_plot <- function(result, tr, plotname, cols,
     
     dev.off()
     
+    return(list(full = fullmat, shown = mat))
+    
 }
 
 piano_plot_series <- function(result, plotname,
@@ -270,19 +272,35 @@ piano_plot_series <- function(result, plotname,
                               consensus_args = list(),
                               heatmap_args = list(),
                               cairo_args = list(),
-                              maintitle = ''){
+                              maintitle = '',
+                              return_result = FALSE){
     
     if(is.null(dir_col)){
+        
+        result <- list()
+        
         for(tr in names(result)){
             
-            piano_plot(result, tr, plotname, cols,
-                    consensus_args, heatmap_args, cairo_args)
+            result[[tr]] <- (
+                piano_plot(result, tr, plotname, cols,
+                        consensus_args, heatmap_args, cairo_args)
+            )
             
+            if(return_result){
+                return(result)
+            }
         }
     }else{
-        piano_plot(result, names(result)[0], plotname, cols, dir_col,
-                   consensus_args, heatmap_args, cairo_args,
-                   maintitle)
+        result <- (
+            piano_plot(result, names(result)[0], plotname, cols, dir_col,
+                    consensus_args, heatmap_args, cairo_args,
+                    maintitle)
+        )
+        
+    }
+    
+    if(return_result){
+        return(result)
     }
     
 }

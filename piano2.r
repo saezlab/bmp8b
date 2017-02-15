@@ -28,11 +28,37 @@ save.image(file = 'piano_all_together.Rdata')
 ### plotting heatmaps
 source('piano.incl.r')
 piano_plot_series(u_nogo_result, plotname = 'nosign_noGO_undir', dir_col = 3,
-                  maintitle = '\t\tGeneset ranks\n\t\t(non directed)',
+                  maintitle = '\t\tGeneset ranks\n\t\t(non-directed)',
                   consensus_args = list(cutoff = 50))
-piano_plot_series(s_nogo_result, plotname = 'sign_noGO_up', dir_col = 1,
-                  maintitle = '\t\tGeneset ranks\n\t\t(upregulated)',
+
+piano_plot_series(u_nogo_result, plotname = 'nosign_noGO_down2', dir_col = 2,
+                  maintitle = '\t\t\tGeneset ranks\n\t\t\t(less phosphorylated)',
                   consensus_args = list(cutoff = 50))
-piano_plot_series(s_nogo_result, plotname = 'sign_noGO_down', dir_col = 5,
+piano_plot_series(u_nogo_result, plotname = 'nosign_noGO_up2', dir_col = 4,
+                  maintitle = '\t\t\tGeneset ranks\n\t\t\t(more phosphorylated)',
+                  consensus_args = list(cutoff = 50))
+
+piano_plot_series(u_nogo_result, plotname = 'nosign_noGO_down', dir_col = 1,
+                  maintitle = '\t\t\tGeneset ranks\n\t\t\t(less phosphorylated)',
+                  consensus_args = list(cutoff = 50))
+piano_plot_series(u_nogo_result, plotname = 'nosign_noGO_up', dir_col = 5,
+                  maintitle = '\t\t\tGeneset ranks\n\t\t\t(more phosphorylated)',
+                  consensus_args = list(cutoff = 50))
+
+
+piano_plot_series(s_nogo_result, plotname = 'sign_noGO_down', dir_col = 1,
                   maintitle = '\t\tGeneset ranks\n\t\t(downregulated)',
                   consensus_args = list(cutoff = 50))
+piano_plot_series(s_nogo_result, plotname = 'sign_noGO_up', dir_col = 5,
+                  maintitle = '\t\tGeneset ranks\n\t\t(upregulated)',
+                  consensus_args = list(cutoff = 50))
+
+piano_plot_series(s_nogo_result, plotname = 'sign_noGO_undir', dir_col = 3,
+                  maintitle = '\t\tGeneset ranks\n\t\t(non-directed)',
+                  consensus_args = list(cutoff = 50))
+
+piano_plot_series(s_nogo_result, plotname = 'sign_noGO_down2', dir_col = 2,
+                  maintitle = '\t\tGeneset ranks\n\t\t(downregulated)',
+                  consensus_args = list(cutoff = 50),
+                  cairo_args = list(height = 20),
+                  heatmap_args = list(lhei = c(0.05, 1.0)))
