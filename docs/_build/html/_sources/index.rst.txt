@@ -6,7 +6,7 @@
 Welcome to pex100's documentation!
 ==================================
 
-``pex100`` is a Python module providing a complet data analysis workflow for
+``pex100`` is a Python module providing a complete data analysis workflow for
 PEX100 phosphoassay data. See details about the array here:
 http://www.fullmoonbio.com/product/phospho-explorer-antibody-array/.
 Many parts of the workflow can be easily adapted to any phosphorylation data,
@@ -26,4 +26,3 @@ Reference
 
 .. autoclass:: pex100.Pex100
    :members:
-

@@ -22,7 +22,7 @@ from setuptools import setup, find_packages
 import glob
 import imp
 
-with open(os.path.join('src', 'csim', '__version__'), 'r') as v:
+with open(os.path.join('src', 'pex100', '__version__'), 'r') as v:
     __version__ = v.readline().strip()
 
 metainfo = {
@@ -31,8 +31,8 @@ metainfo = {
     },
     'version': __version__,
     'license': 'GPLv3',
-    'download_url': ['http://bitbucket.org/deeenes/pex100'],
-    'url': ['http://bitbucket.org/deeenes/pex100'],
+    'download_url': ['https://github.com/saezlab/pex100'],
+    'url': ['https://github.com/saezlab/pex100'],
     'description': 'Phosphoassay data analysis',
     'platforms': ['Linux', 'Unix', 'MacOSX', 'Windows'],
     'keywords': ['data analysis', 'BMP8', 'noradrenaline', 'brown adipose tissue'],
@@ -78,9 +78,9 @@ setup(
     classifiers = metainfo['classifiers'],
     # package installation
     package_dir = {'':'src'},
-    packages = list(set(find_packages() + ['csim'])),
+    packages = list(set(find_packages() + ['pex100'])),
     include_package_data = True,
     install_requires = deps,
-    extras_requre = extras,
+    extras_require = extras,
     package_data = {'__version__': os.path.join('src', 'pex100', '__version__')}
 )

@@ -132,7 +132,7 @@
             
   <div class="section" id="welcome-to-pex100-s-documentation">
 <h1>Welcome to pex100&#8217;s documentation!<a class="headerlink" href="#welcome-to-pex100-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal"><span class="pre">pex100</span></code> is a Python module providing a complet data analysis workflow for
+<p><code class="docutils literal"><span class="pre">pex100</span></code> is a Python module providing a complete data analysis workflow for
 PEX100 phosphoassay data. See details about the array here:
 <a class="reference external" href="http://www.fullmoonbio.com/product/phospho-explorer-antibody-array/">http://www.fullmoonbio.com/product/phospho-explorer-antibody-array/</a>.
 Many parts of the workflow can be easily adapted to any phosphorylation data,
@@ -145,7 +145,7 @@ Questions and bug reports: <a class="reference external" href="mailto:turei&#46;
 <span id="reference"></span><h1>Reference<a class="headerlink" href="#module-pex100.main" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="pex100.Pex100">
-<em class="property">class </em><code class="descclassname">pex100.</code><code class="descname">Pex100</code><span class="sig-paren">(</span><em>dirBase='..'</em>, <em>fnIdMapping='PEX100_Layout.csv'</em>, <em>fnXlsFullData='AssayData-Cambridge-Peirce-150515.xlsx'</em>, <em>fnCombined='bmp8_%s.csv'</em>, <em>fnFcTable='fc_%s_%s.csv'</em>, <em>fnFcTopTable='fctop_%s_%s.csv'</em>, <em>fnFcTopCommon='fctop_%s.csv'</em>, <em>fnFuncCat='func_annot_categories.tab'</em>, <em>fnFuncTidy='functional.csv'</em>, <em>fnKinactTop='kinact_top.tab'</em>, <em>ncbi_tax_id=10090</em>, <em>org_strict=True</em>, <em>flex_resnum=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pex100.</code><code class="descname">Pex100</code><span class="sig-paren">(</span><em>dirBase='..'</em>, <em>fnIdMapping='PEX100_Layout.csv'</em>, <em>fnXlsFullData='AssayData-Cambridge-Peirce-150515.xlsx'</em>, <em>fnCombined='bmp8_%s.csv'</em>, <em>fnFcTable='fc_%s_%s.csv'</em>, <em>fnFcTopTable='fctop_%s_%s.csv'</em>, <em>fnFcUTable='fctop_uniqp_%s_%s.csv'</em>, <em>fnFcSUTable='fctop_uniqp_sign_%s_%s.csv'</em>, <em>fnFcTopCommon='fctop_%s.csv'</em>, <em>fnFuncCat='func_annot_categories.tab'</em>, <em>fnFuncTidy='functional.csv'</em>, <em>fnKinactTop='kinact_top.tab'</em>, <em>fnVennPlot='FC_Venn_%s_%s.pdf'</em>, <em>ncbi_tax_id=10090</em>, <em>org_strict=True</em>, <em>flex_resnum=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="pex100.Pex100.affected_by">
 <code class="descname">affected_by</code><span class="sig-paren">(</span><em>substrate</em>, <em>residue=None</em>, <em>offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.affected_by"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.affected_by" title="Permalink to this definition">¶</a></dt>
@@ -271,7 +271,7 @@ Calculates z-scores, p-values and t-values.</p>
 
 <dl class="method">
 <dt id="pex100.Pex100.fc_table_to_file">
-<code class="descname">fc_table_to_file</code><span class="sig-paren">(</span><em>unique=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_table_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_table_to_file" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fc_table_to_file</code><span class="sig-paren">(</span><em>unique_antibodies=True</em>, <em>unique_proteins=False</em>, <em>signed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.fc_table_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.fc_table_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes FC tables to files.</p>
 </dd></dl>
 
@@ -716,8 +716,29 @@ ancestors.</p>
 
 <dl class="method">
 <dt id="pex100.Pex100.top_fc_venn">
-<code class="descname">top_fc_venn</code><span class="sig-paren">(</span><em>threshold=1.5</em>, <em>fname='FC_Venn.pdf'</em>, <em>sign=&lt;function Pex100.&lt;lambda&gt;&gt;</em>, <em>title=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.top_fc_venn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.top_fc_venn" title="Permalink to this definition">¶</a></dt>
+<code class="descname">top_fc_venn</code><span class="sig-paren">(</span><em>threshold=1.0, sign=None, title='', number_labels=False, figsize=[10, 10], adj={}, treatments=['BMP8b', 'BMP8b_NE', 'NE'], label_size=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pex100/main.html#Pex100.top_fc_venn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pex100.Pex100.top_fc_venn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a Venn diagram of the highest FCs by treatments.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sign</strong> (<em>str</em><em>,</em><em>None</em>) &#8211; If None (default) effect signs are not
+considered. If <cite>positive</cite>, only stimulated
+if <cite>negative</cite> only inhibited sites used.</li>
+<li><strong>number_labels</strong> (<em>bool</em>) &#8211; If <cite>True</cite>, number of elements plotted
+in each field of the diagram; otherwise
+a list of protein names.</li>
+<li><strong>title</strong> (<em>str</em>) &#8211; The main title of the plot.</li>
+<li><strong>threshold</strong> (<em>float</em>) &#8211; The threshold for log2 fold change.
+Fold changes with lower absolute value are
+not considered.</li>
+<li><strong>figsize</strong> (<em>list</em>) &#8211; Figure size for matplotlib.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>

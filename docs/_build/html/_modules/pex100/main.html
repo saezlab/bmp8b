@@ -214,13 +214,32 @@
                  <span class="n">fnCombined</span> <span class="o">=</span> <span class="s1">&#39;bmp8_</span><span class="si">%s</span><span class="s1">.csv&#39;</span><span class="p">,</span>
                  <span class="n">fnFcTable</span> <span class="o">=</span> <span class="s1">&#39;fc_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">.csv&#39;</span><span class="p">,</span>
                  <span class="n">fnFcTopTable</span> <span class="o">=</span> <span class="s1">&#39;fctop_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">.csv&#39;</span><span class="p">,</span>
+                 <span class="n">fnFcUTable</span> <span class="o">=</span> <span class="s1">&#39;fctop_uniqp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">.csv&#39;</span><span class="p">,</span>
+                 <span class="n">fnFcSUTable</span> <span class="o">=</span> <span class="s1">&#39;fctop_uniqp_sign_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">.csv&#39;</span><span class="p">,</span>
                  <span class="n">fnFcTopCommon</span> <span class="o">=</span> <span class="s1">&#39;fctop_</span><span class="si">%s</span><span class="s1">.csv&#39;</span><span class="p">,</span>
                  <span class="n">fnFuncCat</span> <span class="o">=</span> <span class="s1">&#39;func_annot_categories.tab&#39;</span><span class="p">,</span>
                  <span class="n">fnFuncTidy</span> <span class="o">=</span> <span class="s1">&#39;functional.csv&#39;</span><span class="p">,</span>
                  <span class="n">fnKinactTop</span> <span class="o">=</span> <span class="s1">&#39;kinact_top.tab&#39;</span><span class="p">,</span>
+                 <span class="n">fnVennPlot</span> <span class="o">=</span> <span class="s1">&#39;FC_Venn_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">.pdf&#39;</span><span class="p">,</span>
                  <span class="n">ncbi_tax_id</span> <span class="o">=</span> <span class="mi">10090</span><span class="p">,</span>
                  <span class="n">org_strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                  <span class="n">flex_resnum</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is the main class of the module representing an analysis</span>
+<span class="sd">        on a set of phosphorylation sites across multiple samples.</span>
+<span class="sd">        It provides various methods and workflows for its analysis.</span>
+<span class="sd">        </span>
+<span class="sd">        :param str dirBase: The base directory.</span>
+<span class="sd">        :param str fnIdMapping: The ID mapping (layout) file of the assay.</span>
+<span class="sd">                                This is necessary because PEX100 assay</span>
+<span class="sd">                                uses non-standard names by default.</span>
+<span class="sd">        :param str fnXlsFullData: The phosphoassay data in xls file.</span>
+<span class="sd">        :param int ncbi_tax_id: The NCBI Taxonomy ID of the species to</span>
+<span class="sd">                                work with. Not necessary to provide your</span>
+<span class="sd">                                experimental organism here, it is safe to</span>
+<span class="sd">                                let it be human even if the data is from mice.</span>
+<span class="sd">    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">dirBase</span> <span class="o">=</span> <span class="n">dirBase</span>
         
@@ -228,11 +247,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnIdMapping</span><span class="p">,</span> <span class="s1">&#39;fnIdMapping&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnCombined</span><span class="p">,</span> <span class="s1">&#39;fnCombined&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFcTable</span><span class="p">,</span> <span class="s1">&#39;fnFcTable&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFcUTable</span><span class="p">,</span> <span class="s1">&#39;fnFcUTable&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFcSUTable</span><span class="p">,</span> <span class="s1">&#39;fnFcSUTable&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFcTopTable</span><span class="p">,</span> <span class="s1">&#39;fnFcTopTable&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFcTopCommon</span><span class="p">,</span> <span class="s1">&#39;fnFcTopCommon&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFuncCat</span><span class="p">,</span> <span class="s1">&#39;fnFuncCat&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnFuncTidy</span><span class="p">,</span> <span class="s1">&#39;fnFuncTidy&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnKinactTop</span><span class="p">,</span> <span class="s1">&#39;fnKinactTop&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_path</span><span class="p">(</span><span class="n">fnVennPlot</span><span class="p">,</span> <span class="s1">&#39;fnVennPlot&#39;</span><span class="p">)</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">reAnnot</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([\-\s/\.,\(\)\+A-Za-z0-9]{2,}) &#39;</span>\
             <span class="sa">r</span><span class="s1">&#39;\(([A-Z][a-z]+)-?([A-Za-z0-9/]*)\)&#39;</span><span class="p">)</span>
@@ -1371,6 +1393,7 @@
         <span class="n">daFcTable</span>       <span class="o">=</span> <span class="p">{}</span>
         <span class="n">daPTopFcTable</span>   <span class="o">=</span> <span class="p">{}</span>
         <span class="n">daUniqueFcTable</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">daPSTopFcTable</span>  <span class="o">=</span> <span class="p">{}</span>
         
         <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">tbl</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">daCombined</span><span class="p">):</span>
             
@@ -1442,27 +1465,42 @@
                     <span class="p">))</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">daFcTable</span> <span class="o">=</span> <span class="n">daFcTable</span>
-        
+    
         <span class="c1"># selecting the psite with lowest p-value for each protein</span>
         
         <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">arrs</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">daFcTable</span><span class="p">):</span>
             
-            <span class="n">daUniqueFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">daPTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">]</span>   <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">daUniqueFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">]</span>  <span class="o">=</span> <span class="p">{}</span> <span class="c1"># this is unique for antibodies</span>
+            <span class="n">daPTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">]</span>    <span class="o">=</span> <span class="p">{}</span> <span class="c1"># this is unique for proteins</span>
+            <span class="n">daPSTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">]</span>   <span class="o">=</span> <span class="p">{}</span> <span class="c1"># this is unique for proteins</span>
+                                       <span class="c1"># and has signs adjusted</span>
             
             <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">arrs</span><span class="p">):</span>
                 
                 <span class="n">proteins</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
                 <span class="n">antibodies</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="mi">6</span><span class="p">]),</span> <span class="n">arr</span><span class="p">))</span>
                 
-                <span class="n">daPTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">][</span><span class="n">tr</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">daPTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">][</span><span class="n">tr</span><span class="p">]</span>   <span class="o">=</span> <span class="p">[]</span>
                 <span class="n">daUniqueFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">][</span><span class="n">tr</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">daPSTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">][</span><span class="n">tr</span><span class="p">]</span>   <span class="o">=</span> <span class="p">[]</span>
                 
                 <span class="k">for</span> <span class="n">protein</span> <span class="ow">in</span> <span class="n">proteins</span><span class="p">:</span>
                     
                     <span class="n">this_protein</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">protein</span><span class="p">)]</span>
                     
                     <span class="n">imin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">this_protein</span><span class="p">[:,</span><span class="mi">10</span><span class="p">])</span> <span class="c1"># the min p-value</span>
+                    
+                    <span class="n">this_protein_signed</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">this_protein</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">this_protein</span><span class="p">[:,</span><span class="mi">7</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)]</span>
+                    <span class="p">)</span>
+                    
+                    <span class="k">if</span> <span class="n">this_protein_signed</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        
+                        <span class="c1"># we have sign for at least one phosphosite</span>
+                        <span class="n">simin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">this_protein_signed</span><span class="p">[:,</span><span class="mi">10</span><span class="p">])</span>
+                        <span class="n">daPSTopFcTable</span><span class="p">[</span><span class="n">std</span><span class="p">][</span><span class="n">tr</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">this_protein_signed</span><span class="p">[</span><span class="n">simin</span><span class="p">,:]</span>
+                        <span class="p">)</span>
                     
                     <span class="c1"># avoid duplicates -- only one per antibody</span>
                     <span class="c1">#if this_protein[imin, 5] not in antibodies:</span>
@@ -1481,24 +1519,40 @@
         
         <span class="bp">self</span><span class="o">.</span><span class="n">daPTopFcTable</span>   <span class="o">=</span> <span class="n">daPTopFcTable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">daUniqueFcTable</span> <span class="o">=</span> <span class="n">daUniqueFcTable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">daPSTopFcTable</span>  <span class="o">=</span> <span class="n">daPSTopFcTable</span>
         
         <span class="k">if</span> <span class="n">to_file</span><span class="p">:</span>
             
-            <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique_proteins</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique_proteins</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">signed</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique_antibodies</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique_antibodies</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="Pex100.fc_table_to_file"><a class="viewcode-back" href="../../index.html#pex100.Pex100.fc_table_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">fc_table_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Pex100.fc_table_to_file"><a class="viewcode-back" href="../../index.html#pex100.Pex100.fc_table_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">fc_table_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">unique_antibodies</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                         <span class="n">unique_proteins</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                         <span class="n">signed</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Writes FC tables to files.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
-        <span class="n">daFc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">daUniqueFcTable</span> <span class="k">if</span> <span class="n">unique</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">daFcTable</span>
+        <span class="n">daFc</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">daPSTopFcTable</span> <span class="k">if</span> <span class="n">unique_proteins</span> <span class="ow">and</span> <span class="n">signed</span> <span class="k">else</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">daPTopFcTable</span> <span class="k">if</span> <span class="n">unique_proteins</span> <span class="k">else</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">daUniqueFcTable</span> <span class="k">if</span> <span class="n">unique_antibodies</span> <span class="k">else</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">daFcTable</span>
+        <span class="p">)</span>
         
         <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">arrs</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">daFc</span><span class="p">):</span>
             
             <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">arrs</span><span class="p">):</span>
                 
-                <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fnFcTable</span> <span class="k">if</span> <span class="n">unique</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">fnFcTopTable</span>
+                <span class="n">fname</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fnFcSUTable</span> <span class="k">if</span> <span class="n">unique_proteins</span> <span class="ow">and</span> <span class="n">signed</span> <span class="k">else</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fnFcUTable</span> <span class="k">if</span> <span class="n">unique_proteins</span> <span class="k">else</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fnFcTopTable</span> <span class="k">if</span> <span class="n">unique_antibodies</span> <span class="k">else</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fnFcTable</span>
+                <span class="p">)</span>
                 <span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">%</span> <span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">std</span><span class="p">)</span>
                 
                 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">:: Writing to `</span><span class="si">%s</span><span class="s1">`.</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">fname</span><span class="p">)</span>
@@ -2329,8 +2383,8 @@
                     
                     <span class="n">tab</span><span class="p">[</span><span class="n">tr</span><span class="p">]</span> <span class="o">=</span> <span class="n">tab</span><span class="p">[</span><span class="n">tr</span><span class="p">][</span><span class="n">ordr</span><span class="p">,:]</span>
         
-        <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique_antibodies</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc_table_to_file</span><span class="p">(</span><span class="n">unique_antibodies</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="Pex100.fc_top_table"><a class="viewcode-back" href="../../index.html#pex100.Pex100.fc_top_table">[docs]</a>    <span class="k">def</span> <span class="nf">fc_top_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -2373,24 +2427,92 @@
             
             <span class="bp">self</span><span class="o">.</span><span class="n">table_to_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">daFcTop</span><span class="p">[</span><span class="n">std</span><span class="p">],</span> <span class="n">fname</span><span class="p">,</span> <span class="n">lHdr</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="Pex100.top_fc_venn"><a class="viewcode-back" href="../../index.html#pex100.Pex100.top_fc_venn">[docs]</a>    <span class="k">def</span> <span class="nf">top_fc_venn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;FC_Venn.pdf&#39;</span><span class="p">,</span>
-                    <span class="n">sign</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
-                    <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Pex100.top_fc_venn"><a class="viewcode-back" href="../../index.html#pex100.Pex100.top_fc_venn">[docs]</a>    <span class="k">def</span> <span class="nf">top_fc_venn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                    <span class="n">sign</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                    <span class="n">number_labels</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">figsize</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+                    <span class="n">adj</span> <span class="o">=</span> <span class="p">{},</span>
+                    <span class="n">treatments</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">,</span> <span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">,</span> <span class="s1">&#39;NE&#39;</span><span class="p">],</span>
+                    <span class="n">label_size</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a Venn diagram of the highest FCs by treatments.</span>
+<span class="sd">        </span>
+<span class="sd">        :param str,None sign: If None (default) effect signs are not</span>
+<span class="sd">                              considered. If `positive`, only stimulated</span>
+<span class="sd">                              if `negative` only inhibited sites used.</span>
+<span class="sd">        :param bool number_labels: If `True`, number of elements plotted</span>
+<span class="sd">                                   in each field of the diagram; otherwise</span>
+<span class="sd">                                   a list of protein names.</span>
+<span class="sd">        :param str title: The main title of the plot.</span>
+<span class="sd">        :param float threshold: The threshold for log2 fold change.</span>
+<span class="sd">                                Fold changes with lower absolute value are</span>
+<span class="sd">                                not considered.</span>
+<span class="sd">        :param list figsize: Figure size for matplotlib.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
-        <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">plot</span> <span class="o">=</span> <span class="p">{}</span>
-        
-        <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">daUniqueFcTable</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">]):</span>
+        <span class="k">def</span> <span class="nf">set_label_text</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">field_id</span><span class="p">,</span>
+                           <span class="n">number</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">_adj</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)):</span>
             
-            <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="n">tr</span><span class="p">]</span> <span class="o">=</span> \
-                <span class="nb">set</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">5</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">,</span>
-                                                <span class="n">sign</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">5</span><span class="p">]))))[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">number</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%u</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">elements</span><span class="p">))</span>
+            
+            <span class="n">label</span> <span class="o">=</span> <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="n">field_id</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                
+                <span class="n">label</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
+                    <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span>
+                    <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
+                <span class="p">})</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">set_position</span><span class="p">((</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">_adj</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                    <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">_adj</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="k">if</span> <span class="n">label_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">label</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="n">label_size</span><span class="p">)</span>
+                
+                <span class="n">label_artists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
         
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;pdf&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">backend_pdf</span><span class="o">.</span><span class="n">PdfPages</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
+        <span class="k">def</span> <span class="nf">get_adj</span><span class="p">(</span><span class="n">setkey</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">adj</span><span class="p">[</span><span class="n">setkey</span><span class="p">]</span> <span class="k">if</span> <span class="n">setkey</span> <span class="ow">in</span> <span class="n">adj</span> <span class="k">else</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        
+        <span class="n">treatments</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">treatments</span><span class="p">)</span>
+        <span class="n">label_artists</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;plotVenn&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotVenn</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;nosign&#39;</span> <span class="k">if</span> <span class="n">sign</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sign</span><span class="p">,</span>
+               <span class="s1">&#39;</span><span class="si">%.02f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">threshold</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">plot</span>  <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fnVennPlot</span> <span class="o">%</span> <span class="n">key</span>
+        
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">treatments</span><span class="p">:</span>
+            
+            <span class="n">arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">daUniqueFcTable</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">][</span><span class="n">tr</span><span class="p">]</span>
+            <span class="c1"># we either select the </span>
+            <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="s1">&#39;positive&#39;</span><span class="p">:</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">7</span><span class="p">]</span> <span class="o">==</span>  <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:]</span>
+            <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="s1">&#39;negative&#39;</span><span class="p">:</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">7</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:]</span>
+            
+            <span class="k">if</span> <span class="n">sign</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">arr</span><span class="p">[:,</span><span class="mi">9</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[:,</span><span class="mi">9</span><span class="p">]</span> <span class="o">*</span> <span class="n">arr</span><span class="p">[:,</span><span class="mi">7</span><span class="p">]</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="n">tr</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">set</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">values</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="p">)</span>
+        
+        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;pdf&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">backend_pdf</span><span class="o">.</span><span class="n">PdfPages</span><span class="p">(</span><span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fname&#39;</span><span class="p">])</span>
+        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span><span class="p">)</span>
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;cvs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">backend_pdf</span><span class="o">.</span><span class="n">FigureCanvasPdf</span><span class="p">(</span><span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">])</span>
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;ax&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         
@@ -2401,117 +2523,55 @@
             <span class="n">ax</span> <span class="o">=</span> <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;ax&#39;</span><span class="p">]</span>
         <span class="p">)</span>
         
-        <span class="c1"># BMP8b</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;100&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">]</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;100&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;100&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#CC5555&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
+        <span class="c1"># only in one set</span>
+        <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">field_id</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">treatments</span><span class="p">,</span>
+            <span class="p">[</span><span class="s1">&#39;100&#39;</span><span class="p">,</span> <span class="s1">&#39;010&#39;</span><span class="p">,</span> <span class="s1">&#39;001&#39;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s1">&#39;#CC5555&#39;</span><span class="p">,</span> <span class="s1">&#39;#55AA55&#39;</span><span class="p">,</span> <span class="s1">&#39;#5555CC&#39;</span><span class="p">]):</span>
+            
+            <span class="n">elements</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="n">tr</span><span class="p">]</span>
+            <span class="n">othertr</span>   <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">treatments</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">([</span><span class="n">tr</span><span class="p">])</span>
+            <span class="n">otherelem</span> <span class="o">=</span> <span class="nb">set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">otr</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="n">otr</span><span class="p">],</span>
+                                         <span class="n">othertr</span><span class="p">))</span>
+            <span class="n">elements</span> <span class="o">=</span> <span class="n">elements</span> <span class="o">-</span> <span class="n">otherelem</span>
+            <span class="n">set_label_text</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">field_id</span><span class="p">,</span>
+                        <span class="n">number_labels</span><span class="p">,</span> <span class="n">_adj</span> <span class="o">=</span> <span class="n">get_adj</span><span class="p">(</span><span class="n">tr</span><span class="p">))</span>
+            <span class="n">plot</span><span class="p">[</span><span class="n">tr</span><span class="p">]</span> <span class="o">=</span> <span class="n">elements</span>
         
-        <span class="c1"># NE</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;001&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">]</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">]</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;001&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;001&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#5555CC&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
+        <span class="c1"># intersections of 2 sets</span>
+        <span class="k">for</span> <span class="n">pair</span><span class="p">,</span> <span class="n">field_id</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">treatments</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="p">[</span><span class="s1">&#39;110&#39;</span><span class="p">,</span> <span class="s1">&#39;101&#39;</span><span class="p">,</span> <span class="s1">&#39;011&#39;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s1">&#39;#C0A055&#39;</span><span class="p">,</span> <span class="s1">&#39;#C044C0&#39;</span><span class="p">,</span> <span class="s1">&#39;#44A0C0&#39;</span><span class="p">]</span>
+            <span class="p">):</span>
+            
+            <span class="n">other</span>    <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">treatments</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">pair</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">elements</span> <span class="o">=</span> <span class="nb">set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">tr</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="n">tr</span><span class="p">],</span> <span class="n">pair</span><span class="p">))</span>
+            <span class="n">elements</span> <span class="o">=</span> <span class="n">elements</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="n">other</span><span class="p">]</span>
+            
+            <span class="n">set_label_text</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">field_id</span><span class="p">,</span>
+                           <span class="n">number_labels</span><span class="p">,</span> <span class="n">_adj</span> <span class="o">=</span> <span class="n">get_adj</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">:</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pair</span><span class="p">))</span>
+            
+            <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">:</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pair</span><span class="p">]</span> <span class="o">=</span> <span class="n">elements</span>
         
-        <span class="c1"># BMP8b_NE</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;010&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">]</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">]</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;010&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;010&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#55AA55&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
-        
-        <span class="c1"># BMP8b &amp; BMP8b_NE</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;110&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span> <span class="o">&amp;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">])</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;110&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;110&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#C0A055&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
-        
-        <span class="c1"># BMP8b &amp; NE</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;101&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span> <span class="o">&amp;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">])</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;101&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;101&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#C044C0&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
-        <span class="n">pos</span> <span class="o">=</span> <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;101&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;101&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_position</span><span class="p">((</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">))</span>
-        
-        <span class="c1"># BMP8b_NE &amp; NE</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;011&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">]</span> <span class="o">&amp;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">])</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;011&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;011&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#44A0C0&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
-        
-        <span class="c1"># BMP8b &amp; NE &amp; BMP8b_NE</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;111&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b&#39;</span><span class="p">]</span> <span class="o">&amp;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;NE&#39;</span><span class="p">])</span> <span class="o">-</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="p">[</span><span class="s1">&#39;BMP8b_NE&#39;</span><span class="p">]</span>
-            <span class="p">)))</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;111&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_wrap</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;111&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_bbox</span><span class="p">({</span>
-            <span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span> <span class="s1">&#39;#A088A0&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;boxstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round,pad=1&#39;</span>
-        <span class="p">})</span>
-        <span class="n">pos</span> <span class="o">=</span> <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;111&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;venn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_label_by_id</span><span class="p">(</span><span class="s1">&#39;111&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_position</span><span class="p">((</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">))</span>
+        <span class="c1"># intersection of all the 3</span>
+        <span class="n">elements</span> <span class="o">=</span> <span class="nb">set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dsetTopFc</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="n">set_label_text</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span> <span class="s1">&#39;#A088A0&#39;</span><span class="p">,</span> <span class="s1">&#39;111&#39;</span><span class="p">,</span>
+                       <span class="n">number_labels</span><span class="p">,</span> <span class="n">_adj</span> <span class="o">=</span> <span class="n">get_adj</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">treatments</span><span class="p">)))</span>
+        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">treatments</span><span class="p">)]</span> <span class="o">=</span> <span class="n">elements</span>
         
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;ax&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mf">0.92</span><span class="p">)</span>
+        <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">rect</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">))</span>
+        <span class="c1">#plot[&#39;fig&#39;].subplots_adjust(bottom = 0.2, top = 0.8, right = 0.8, left = 0.2)</span>
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;cvs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;cvs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">print_figure</span><span class="p">(</span><span class="n">plot</span><span class="p">[</span><span class="s1">&#39;pdf&#39;</span><span class="p">])</span>
+                                 <span class="c1">#bbox_inches = &#39;tight&#39;,</span>
+                                 <span class="c1">#bbox_extra_artists = label_artists)</span>
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;pdf&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fig&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">:: Plot saved to `</span><span class="si">%s</span><span class="s1">`.</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">plot</span><span class="p">[</span><span class="s1">&#39;fname&#39;</span><span class="p">])</span>
         
-        <span class="bp">self</span><span class="o">.</span><span class="n">plotVenn</span> <span class="o">=</span> <span class="n">plot</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotVenn</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot</span></div>
     
 <div class="viewcode-block" id="Pex100.antibody_id_to_name"><a class="viewcode-back" href="../../index.html#pex100.Pex100.antibody_id_to_name">[docs]</a>    <span class="k">def</span> <span class="nf">antibody_id_to_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aid</span><span class="p">,</span> <span class="n">unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
