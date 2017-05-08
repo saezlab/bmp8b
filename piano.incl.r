@@ -194,20 +194,28 @@ piano_plot <- function(result, tr, plotname, cols,
     if(!is.null(dir_col)){
         ch <- data.frame()
         for(tr0 in names(result)){
+            
             ch0 <- do.call('consensusHeatmap', c(list(resList = result[[tr0]]),
                                                  consensus_args))
+            
+            print(colnames(ch0$rankMat))
+            
             ch0 <- ch0$rankMat[,c(dir_col)]
+            
             ch <- transform(merge(ch, ch0, by = 0, all = TRUE),
                             row.names = Row.names, Row.names = NULL)
         }
+        
         fullmat <- as.matrix(ch)
         colnames(fullmat) <- names(result)
         plotname2 <- as.character(dir_col)
         mat <- fullmat[apply(fullmat, MARGIN = 1, function(x) any(x < cutoff)), ]
+        
     }else{
         
         ch <- do.call('consensusHeatmap', c(list(resList = result[[tr]]),
                                             consensus_args))
+        
         mat <- ch$rankMat[,cols]
         plotname2 <- tr
     }

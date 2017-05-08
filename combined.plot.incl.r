@@ -31,17 +31,19 @@ theme_none <- theme(
     axis.line = element_blank(),
     axis.ticks = element_blank(),
     plot.margin = unit(c(0, 0, 0, 0), 'cm')
-    )
+)
 
 
 ### top heatmap with dendrogram
 
 get_fctop <- function(fname = 'fctop_none.csv'){
+    
     fctop <- read.table(fname, header = TRUE, sep = '\t')
     
     fctop <- fctop[, names(fctop) != 'resnum']
     
     return(fctop)
+    
 }
 
 get_func <- function(fname = 'functional.csv'){
@@ -58,6 +60,7 @@ get_func <- function(fname = 'functional.csv'){
 }
 
 plot_dendrogram <- function(dendrodata){
+    
     p <- ggplot(segment(dendrodata)) +
         geom_segment(aes(x = x, y = y, xend = xend, yend = yend), size = 0.1) +
         #scale_y_continuous(limits = c(0, 100)) +
@@ -72,11 +75,24 @@ plot_dendrogram <- function(dendrodata){
     return(p)
 }
 
-plot_functional <- function(data){
+plot_functional <- function(data, leg = FALSE){
+    
     p <- ggplot(data, aes(y = label, fill = value, x = category)) +
         facet_grid(. ~ func) +
-        geom_tile(aes(fill = value)) +
-        scale_fill_gradient(low = 'white', high = '#333333') +
+        geom_tile(aes(fill = value))
+    
+    if(leg){
+        p <- p +
+        scale_fill_gradient(low = 'white', high = '#333333',
+                            guide = guide_colorbar(title = 'Proportion of\nproteins involved\nin biological function',
+                                                    direction = 'horizontal',
+                                                    label.position = 'top'))
+    }else{
+        p <- p +
+            scale_fill_gradient(low = 'white', high = '#333333', guide = FALSE)
+    }
+    
+    p <- p +
         xlab('Functional annotations') +
         ylab('') +
         theme(
@@ -87,7 +103,7 @@ plot_functional <- function(data){
             panel.background = element_blank(),
             axis.text.x = element_text(angle = 90, vjust = 0.5, size = 9, hjust = 1),
             axis.text.y = element_blank(),
-            legend.position = 'none',
+            legend.position = 'bottom',
             axis.ticks.y = element_blank(),
             panel.border = element_rect(color = '#777777', fill = NA, size = .1)
         )
@@ -96,12 +112,17 @@ plot_functional <- function(data){
 }
 
 plot_heatmap <- function(data){
+    
+    lim <- ceiling(max(abs(data$value)))
+    
+    print(max(abs(data$value)))
+    
     p <- ggplot(data, aes(x = variable, y = psite)) +
-        geom_tile(aes(fill = value)) +
-        scale_fill_gradient2(high = '#990000', mid = 'white', low = '#333333',
+        geom_tile(aes(fill = ifelse(value < -2, -2, ifelse(value > 2, 2, value)))) +
+        scale_fill_gradient2(high = '#990000', mid = 'white', low = '#009900',
                              limits = c(-2, 2),
                              guide = guide_colorbar(
-                                 title = 'Fold change (log2)',
+                                 title = 'Fold change\n(log2)',
                                  direction = 'horizontal',
                                  label.position = 'top'
                              )
@@ -153,7 +174,9 @@ combined_plot <- function(fctop,
                           xdendrog = .7435,
                           ydendrog = .5252,
                           hpaper   = 14,
-                          wpaper   = 8){
+                          wpaper   = 8,
+                          leg2x    = .68,
+                          leg2y    = -.175){
     
     if(signs){
         # here we drop all items where the effect sign is unknown
@@ -197,11 +220,14 @@ combined_plot <- function(fctop,
     headfunc$label <- factor(headfunc$label, levels = onames[[1]])
 
     # plotting the heatmap
-    p1 <- plot_heatmap(mltdfheadfctop)
+    p1  <- plot_heatmap(mltdfheadfctop)
     # plotting the dendrogram
-    p3 <- plot_dendrogram(dendrodatapsite)
+    p3  <- plot_dendrogram(dendrodatapsite)
     # plotting functional annotations
-    p4 <- plot_functional(headfunc)
+    p4l <- plot_functional(headfunc, leg = TRUE)
+    p4  <- plot_functional(headfunc, leg = FALSE)
+    
+    leg4 <- gtable::gtable_filter(ggplot_gtable(ggplot_build(p4l)), 'guide-box')
     
     #ggsave('gg_func_table_dendro-order.pdf', device = cairo_pdf, width = 5, height = 12)
     
@@ -217,6 +243,8 @@ combined_plot <- function(fctop,
         print(p3, vp = viewport(0.2, 1.076, x = 0.88, y = 0.498))
     dev.off()
     
+    print(leg4$widths)
+    
     # combined plot of all 3 plots
     fname <- get_pdfname(TRUE, signs, top)
     cat(sprintf('\t:: Plotting to %s\n', fname))
@@ -227,6 +255,12 @@ combined_plot <- function(fctop,
         print(p4, vp = viewport(wannotat, hannotat, x = xannotat, y = yannotat))
         print(p1, vp = viewport(wheatmap, hheatmap, x = xheatmap, y = yheatmap))
         print(p3, vp = viewport(wdendrog, hdendrog, x = xdendrog, y = ydendrog))
+        pushViewport(viewport(x = unit(leg2x, "npc"),
+                              y = unit(leg2y, "npc"),
+                              w = leg4$widths[2], h = .4,
+                              just = c('right', 'bottom')))
+        grid.draw(leg4)
+        popViewport()
     dev.off()
     
 #     p1g <- ggplotGrob(p1)

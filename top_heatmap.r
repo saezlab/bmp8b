@@ -8,15 +8,18 @@ require(ggplot2)
 require(reshape2)
 require(ggdendro)
 require(grid)
+library(gridExtra)
+library(gtable)
 #require(cowplot)
 #require(egg)
 
-source('combined.plot.incl.r')
 
 fctop <- get_fctop()
 func <- get_func()
 
 # with effect signs
+source('combined.plot.incl.r')
+
 combined_plot(fctop = fctop,
               func = func,
               top = 100,
@@ -33,7 +36,9 @@ combined_plot(fctop = fctop,
               xdendrog = .7435,
               ydendrog = .5295,
               hpaper   = 14,
-              wpaper   = 8)
+              wpaper   = 8,
+              leg2x    = .68,
+              leg2y    = -.175)
 
 # without considering effect signs
 combined_plot(fctop = fctop,
@@ -72,7 +77,8 @@ combined_plot(fctop = fctop,
                 xdendrog = .7435,
                 ydendrog = .523,
                 hpaper   = 38,
-                wpaper   = 8)
+                wpaper   = 8,
+                leg2y    = -.1522)
 
 # all not using effect signs
 combined_plot(fctop = fctop,
@@ -92,7 +98,8 @@ combined_plot(fctop = fctop,
               xdendrog = .7435,
               ydendrog = .5215,
               hpaper   = 70,
-              wpaper   = 8)
+              wpaper   = 8,
+              leg2y    = -.1495)
 
 # with effect signs, top 50
 combined_plot(fctop = fctop,
@@ -111,7 +118,9 @@ combined_plot(fctop = fctop,
               xdendrog = .7415,
               ydendrog = .5564,
               hpaper   = 9,
-              wpaper   = 8)
+              wpaper   = 8,
+              leg2x    = .65,
+              leg2y    = -.162)
 
 # without considering effect signs, top 50
 combined_plot(fctop = fctop,
@@ -131,4 +140,5 @@ combined_plot(fctop = fctop,
               xdendrog = .796,
               ydendrog = .5564,
               hpaper   = 9,
-              wpaper   = 8)
+              wpaper   = 8,
+              leg2y    = -.162)
