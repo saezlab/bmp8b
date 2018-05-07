@@ -34,7 +34,7 @@ Quick start
 
 Authors
 -------
-Dénes Türei -- denes@ebi.ac.uk (feedback, bug reports)
+Dénes Türei -- turei.denes@gmail.com (feedback, bug reports)
 
 License
 -------
