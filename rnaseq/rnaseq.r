@@ -8,7 +8,9 @@ require(readr)
 require(dplyr)
 require(tidyr)
 require(purrr)
+require(tibble)
 require(ggplot2)
+require(ggrepel)
 
 # bioconductor
 require(limma)
@@ -27,14 +29,18 @@ rnaseq.main <- function(
         etpair = c('BAT_WT', 'BAT_UCP'),
         do_lowexp_filter = TRUE,
         do_boxplots = TRUE,
-        do_enrichment = TRUE
+        do_enrichment = TRUE,
+        sample_filter = sample_name
     ){
+    
+    sample_filter <- enquo(sample_filter)
     
     data <- rnaseq.read_counts(
         geo_id,
         biotype_file = biotype_file,
         biotypes = biotypes,
-        use_samples = use_samples
+        use_samples = use_samples,
+        sample_filter = !!sample_filter
     ) %>%
     {`if`(
         do_lowexp_filter,
@@ -192,7 +198,7 @@ rnaseq.read_counts <- function(
     
     # create a data frame with sample names and IDs only
     samples <- counts_data %>%
-        select(sample) %>%
+        dplyr::select(sample) %>%
         group_by(sample) %>%
         summarize_all(first) %>%
         # add annotations from the series matrix,
@@ -200,7 +206,7 @@ rnaseq.read_counts <- function(
         left_join(
             series_matrix$samples %>%
                 mutate(Sample_title = gsub(' \\[.*', '', Sample_title)) %>%
-                select(
+                dplyr::select(
                     sample = Sample_geo_accession,
                     sample_name = Sample_title
                 ),
@@ -250,7 +256,7 @@ rnaseq.read_counts <- function(
             !is.null(use_samples),
             left_join(., samples, by = c('sample')) %>%
             filter(!!sample_filter %in% use_samples) %>%
-            select(-sample_name, -tissue, -ko_gene, -tissue_type),
+            dplyr::select(-sample_name, -tissue, -ko_gene, -tissue_type),
             .
         )} %>%
         # transform to wide data frame
@@ -338,7 +344,7 @@ rnaseq.export_biotype_stats <- function(data, outfile = 'biotypes.tsv'){
         group_by(biotype) %>%
         mutate(cnt = n()) %>%
         summarize_all(first) %>%
-        select(biotype, cnt) %>%
+        dplyr::select(biotype, cnt) %>%
         write_tsv(outfile)
         
     ))
@@ -387,7 +393,6 @@ rnaseq.get_design_matrix <- function(
     ){
     
     message(' > Creating design matrix')
-    
     data$design_matrix <- model.matrix(form)
     
     return(data)
@@ -404,7 +409,7 @@ rnaseq.get_dgelist <- function(data){
     countdf <- data$data %>%
         # just to be safe having no groups
         ungroup() %>%
-        select(-biotype, -name) %>%
+        dplyr::select(-biotype, -name) %>%
         as.data.frame()
     
     rownames(countdf) <- nm
@@ -828,7 +833,7 @@ rnaseq.map_entrez <- function(data, var, sub = 'table'){
 }
 
 
-rnaseq.goenrich <- funciton(data, var = 'et_entrez'){
+rnaseq.goenrich <- function(data, var = 'et_entrez'){
     
     govar <- sprintf('go_%s', var)
     
@@ -841,13 +846,100 @@ rnaseq.goenrich <- funciton(data, var = 'et_entrez'){
 }
 
 
-rnaseq.keggenrich <- funciton(data, var = 'et_entrez'){
+rnaseq.keggenrich <- function(data, var = 'et_entrez'){
     
     keggvar <- sprintf('kegg_%s', var)
     
     message(' > KEGG pathway enrichment analysis')
     
     data[[keggvar]] <- keggaa(data[[var]], species = 'Mm')
+    
+    return(data)
+    
+}
+
+
+rnaseq.volcano <- function(data, var = 'et'){
+    
+    pdfname <- sprintf('%s_volcano.pdf', data$prefix)
+    
+    message(sprintf(' > Plotting volcano plot into `%s`', pdfname))
+    
+    genes <- rownames(data[[var]]$table)
+    d <- as_tibble(data[[var]]$table) %>%
+        add_column(name = genes)
+    
+    xli <- max(abs(d$logFC))
+    
+    p <- ggplot(
+            d,
+            aes(
+                x = logFC,
+                y = -log10(PValue),
+                color = (
+                    abs(logFC) > log2(1.5) &
+                    PValue < .05
+                )
+            )
+        ) +
+        geom_vline(xintercept = 0, color = '#CCCCCC', lwd = .1, linetype = 'dashed') +
+        geom_point(alpha = .33, stroke = 0, shape = 16) +
+        lims(x = c(-xli, xli)) +
+        geom_text_repel(
+            data = d %>%
+                filter(logFC > log2(8) | logFC < log2(1 / 4) | PValue < 1e-50),
+            mapping = aes(
+                label = name,
+                x = logFC,
+                y = -log10(PValue)
+            ),
+            color = '#333333',
+            size = 1,
+            segment.size = .1,
+            segment.alpha = .66,
+            family = 'DINPro',
+            box.padding = 0.05,
+            min.segment.length = 0.2
+        ) +
+        scale_color_manual(
+            guide = guide_legend(title = 'Significance'),
+            values = c(
+                'TRUE'  = '#EF3A43',
+                'FALSE' = '#CCCCCC'
+            ),
+            labels = c(
+                'TRUE'  = 'P-value < 0.05\nand FC > 1.5',
+                'FALSE' = 'P-value > 0.05\nor FC < 1.5'
+            )
+        ) +
+        geom_point(
+            data = d %>%
+                filter(name %in% c('Bmp8b', 'Nrg4', 'Vegfa', 'Vegfb')),
+            mapping = aes(x = logFC, y = -log10(PValue)),
+            color = '#B7CA54',
+            shape = 16,
+            size = .5
+        ) +
+        geom_text_repel(
+            data = d %>%
+                filter(name %in% c('Bmp8b', 'Nrg4', 'Vegfa', 'Vegfb')),
+            mapping = aes(x = logFC, y = -log10(PValue), label = name),
+            color = '#B7CA54',
+            size = 1,
+            segment.size = .1,
+            segment.alpha = .66,
+            family = 'DINPro'
+        ) +
+        xlab('Fold change (log)') +
+        ylab('P-value (-log)') +
+        theme_minimal() +
+        theme(
+            text = element_text(family = 'DINPro'),
+            legend.spacing = unit(2, 'cm'),
+            legend.key.height = unit(1, 'cm')
+        )
+    
+    ggsave(pdfname, device = cairo_pdf, width = 6, height = 5)
     
     return(data)
     
