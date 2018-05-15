@@ -11,6 +11,7 @@ require(purrr)
 require(tibble)
 require(ggplot2)
 require(ggrepel)
+require(viridis)
 
 # bioconductor
 require(limma)
@@ -20,17 +21,70 @@ require(edgeR)
 require(org.Mm.eg.db)
 
 
+rnaseq.multi <- function(
+        geo_id = 'GSE99412',
+        conds = list(
+            c('BAT_WT', 'BAT_UCP'),
+            c('iWAT_WT', 'iWAT_UCP'),
+            c('iWAT_WT', 'BAT_WT'),
+            c('iWAT_UCP', 'BAT_UCP')
+        ),
+        datadir = 'data',
+        ...
+    ){
+    
+    data.summary <-
+        bind_rows(
+            lapply(
+                conds,
+                function(cnd){
+                    
+                    scnd <- sprintf('%s__%s', cnd[1], cnd[2])
+                    
+                    msg(sprintf(
+                        ' >>>>> Running workflow for `%s---%s`', cnd[1], cnd[2]
+                    ))
+                    
+                    data.cnd <- rnaseq.main(
+                        geo_id = geo_id,
+                        use_samples = cnd,
+                        etpair = cnd,
+                        datadir = datadir,
+                        ...
+                    )
+                    
+                    (
+                        rnaseq.gather_dedf(data.cnd$dedf) %>%
+                        mutate(comp = scnd, rank = 1:n())
+                    )
+                    
+                }
+            )
+        ) %>%
+        left_join(
+            rnaseq.get_series_matrix(geo_id, datadir) %>%
+                dplyr::select(sample_name),
+            by = c('sample')
+        )
+    
+    return(data.summary)
+    
+}
+
+
 rnaseq.main <- function(
         geo_id = 'GSE99412',
         biotype_file = 'mouse_biotypes.tsv',
         biotypes = c('protein_coding'),
         use_samples = c('BAT_WT', 'BAT_UCP'),
-        design_formula = ~ 0 + data$samples$sample_name,
+        design_formula = ~ 0 + sample_name,
         etpair = c('BAT_WT', 'BAT_UCP'),
         do_lowexp_filter = TRUE,
         do_boxplots = TRUE,
         do_enrichment = TRUE,
-        sample_filter = sample_name
+        do_de = TRUE,
+        sample_filter = sample_name,
+        datadir = 'data'
     ){
     
     sample_filter <- enquo(sample_filter)
@@ -40,7 +94,8 @@ rnaseq.main <- function(
         biotype_file = biotype_file,
         biotypes = biotypes,
         use_samples = use_samples,
-        sample_filter = !!sample_filter
+        sample_filter = !!sample_filter,
+        datadir = datadir
     ) %>%
     {`if`(
         do_lowexp_filter,
@@ -86,9 +141,16 @@ rnaseq.main <- function(
     )} %>%
     {`if`(
         do_enrichment,
-        rnaseq.map_entrez(var = 'et') %>%
+        rnaseq.map_entrez(., var = 'et') %>%
         rnaseq.goenrich() %>%
         rnaseq.keggenrich(),
+        .
+    )} %>%
+    {`if`(
+        do_de,
+        rnaseq.volcano(.) %>%
+        rnaseq.de_dataframe() %>%
+        rnaseq.de_heatmap(),
         .
     )}
     #rnaseq.hts_filter2() %>%
@@ -161,23 +223,9 @@ rnaseq.read_counts <- function(
     )
     
     # check for series matrix, download if missing
-    series_matrix_txt <- sprintf('%s_series_matrix.txt.gz', geo_id)
-    series_matrix_name <- file.path(datadir, series_matrix_txt)
-    if(!file.exists(series_matrix_name)){
-        series_matrix_url <- sprintf(
-            'ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE99nnn/%s/matrix/%s',
-            geo_id,
-            series_matrix_txt
-        )
-        download.file(
-            series_matrix_url,
-            destfile = series_matrix_name,
-            method = download_method
-        )
-    }
-    series_matrix <- rnaseq.read_series_matrix(series_matrix_name)
+    series_matrix <- rnaseq.get_series_matrix(geo_id, datadir)
     
-    message(' > Reading read counts data')
+    msg(' > Reading read counts data')
     
     # building main data frame
     counts_data <-
@@ -204,12 +252,7 @@ rnaseq.read_counts <- function(
         # add annotations from the series matrix,
         # primarily sample names
         left_join(
-            series_matrix$samples %>%
-                mutate(Sample_title = gsub(' \\[.*', '', Sample_title)) %>%
-                dplyr::select(
-                    sample = Sample_geo_accession,
-                    sample_name = Sample_title
-                ),
+            rnaseq.samples_df(series_matrix),
             by = c('sample')
         ) %>%
         mutate(
@@ -283,19 +326,62 @@ rnaseq.read_counts <- function(
 }
 
 
+rnaseq.samples_df <- function(series_matrix){
+    
+    (
+        series_matrix$samples %>%
+        mutate(Sample_title = gsub(' \\[.*', '', Sample_title)) %>%
+        dplyr::select(
+            sample = Sample_geo_accession,
+            sample_name = Sample_title
+        )
+    )
+    
+}
+
+
+rnaseq.get_series_matrix <- function(geo_id, datadir){
+    #' Check for series matrix, download if missing
+    
+    series_matrix_txt <- sprintf('%s_series_matrix.txt.gz', geo_id)
+    series_matrix_fname <- file.path(datadir, series_matrix_txt)
+    
+    if(!file.exists(series_matrix_fname)){
+        
+        series_matrix_url <- sprintf(
+            'ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE99nnn/%s/matrix/%s',
+            geo_id,
+            series_matrix_txt
+        )
+        
+        download.file(
+            series_matrix_url,
+            destfile = series_matrix_fname,
+            method = download_method
+        )
+        
+    }
+    
+    return(rnaseq.read_series_matrix(series_matrix_fname))
+    
+}
+
+
 rnaseq.read_series_matrix <- function(fname){
     
     con <- file(fname, 'r')
     lns <- readLines(con)
     close.connection(con)
     
-    data     <- list()
-    sampledf <- list()
+    series_matrix <- list()
+    sampledf      <- list()
     
     for(l in lns){
         
         if(nchar(l)){
+            
             lcon <- textConnection(l, open = 'r')
+            
             fields <- as.character(
                 read.delim(
                     lcon,
@@ -304,22 +390,31 @@ rnaseq.read_series_matrix <- function(fname){
                     stringsAsFactors = FALSE
                 )[1,]
             )
+            
             if(length(fields) > 1){
+                
                 key <- gsub('^!', '', as.character(fields[1]))
                 values <- fields[2:length(fields)]
+                
                 if(length(values) == 1){
-                    data[[key]] <- values
+                    
+                    series_matrix[[key]] <- values
+                    
                 }else{
-                    sampledf[[key]] <- values
+                    
+                    sampledf[[key]]      <- values
+                    
                 }
+                
             }
+            
         }
         
-        data[['samples']] <- as.data.frame(sampledf)
+        series_matrix$samples <- as.data.frame(sampledf)
         
     }
     
-    return(data)
+    return(series_matrix)
     
 }
 
@@ -358,7 +453,7 @@ rnaseq.plot_counts_density <- function(data){
     
     d <- rnaseq.gather_data(data)
     
-    message(sprintf(' > Plotting counts density into `%s`', pdfname))
+    msg(sprintf(' > Plotting counts density into `%s`', pdfname))
     
     p <- ggplot(d, aes(log2(count + 1))) +
         geom_density() +
@@ -377,7 +472,7 @@ rnaseq.plot_counts_density <- function(data){
 
 rnaseq.gather_data <- function(data){
     
-    message(' > Gather')
+    msg(' > Gather')
     
     (
         data$data %>%
@@ -389,11 +484,13 @@ rnaseq.gather_data <- function(data){
 
 rnaseq.get_design_matrix <- function(
         data,
-        form = ~ 0 + data$samples$sample_name
+        form = ~ 0 + sample_name,
+        attr = 'design_matrix'
     ){
     
-    message(' > Creating design matrix')
-    data$design_matrix <- model.matrix(form)
+    msg(sprintf(' > Creating design matrix `%s`', attr))
+    
+    data[[attr]] <- model.matrix(form, data = data$samples)
     
     return(data)
     
@@ -402,7 +499,7 @@ rnaseq.get_design_matrix <- function(
 
 rnaseq.get_dgelist <- function(data){
     
-    message(' > Creating DGElist object')
+    msg(' > Creating DGElist object')
     
     nm <- data$data$name
     
@@ -428,7 +525,7 @@ rnaseq.get_dgelist <- function(data){
 
 rnaseq.cpm <- function(data, dgelistvar, var){
     
-    message(sprintf(' > Calculating CPMs and TMMs for `%s`', var))
+    msg(sprintf(' > Calculating CPMs and TMMs for `%s`', var))
     
     data[[sprintf('cpm.log2.%s', var)]]     <-
         cpm(data[[dgelistvar]], normalized.lib.sizes = FALSE, log = TRUE)
@@ -446,9 +543,9 @@ rnaseq.plot_raw <- function(data){
     
     pdfname <- sprintf('%s_raw.pdf', data$prefix)
     
-    message(sprintf(' > Plotting raw data into `%s`', pdfname))
+    msg(sprintf(' > Plotting raw data into `%s`', pdfname))
     
-    cairo_pdf(pdfname, width = 10, height = 5)
+    cairo_pdf(pdfname, width = 10, height = 5, family = 'DINPro')
         
         par(mfrow = c(1, 2), mar = c(4, 4, 2, 2))
         
@@ -471,7 +568,7 @@ rnaseq.remove_50 <- function(data, dgelistvar, label, var){
     pdfname <- sprintf('%s_%s_rm50%s.pdf', data$prefix, var, label)
     above <- `if`(label == 'cpm1', 'CPM 1', 'count 0')
     
-    message(
+    msg(
         sprintf(' > Remove 50 above %s; plotting into `%s`', above, pdfname)
     )
     
@@ -487,7 +584,7 @@ rnaseq.remove_50 <- function(data, dgelistvar, label, var){
     
     data <- rnaseq.cpm(data, rmvar, rmvar)
     
-    cairo_pdf(pdfname, width = 10, height = 5)
+    cairo_pdf(pdfname, width = 10, height = 5, family = 'DINPro')
         
         par(mfrow = c(1, 2), mar = c(4, 4, 2, 2))
         
@@ -570,9 +667,9 @@ rnaseq.htsf_generic <- function(
         data, counts, htsfvar, pdfname, taskname, main
     ){
     
-    message(sprintf(' > %s; plotting into `%s`', taskname, pdfname))
+    msg(sprintf(' > %s; plotting into `%s`', taskname, pdfname))
     
-    cairo_pdf(pdfname, width = 15, height = 5)
+    cairo_pdf(pdfname, width = 15, height = 5, family = 'DINPro')
         
         par(mfrow = c(1, 3), mar = c(4, 4, 2, 2))
         
@@ -658,7 +755,7 @@ rnaseq.samples_boxplot <- function(data, counts, label = '0'){
     
     pdfname <- sprintf('%s_samples_boxplot_%s.pdf', data$prefix, label)
     
-    message(sprintf(' > Plotting samples boxplot into `%s`', pdfname))
+    msg(sprintf(' > Plotting samples boxplot into `%s`', pdfname))
     
     d <- gather(
             as.data.frame(counts),
@@ -691,7 +788,7 @@ rnaseq.samples_boxplot <- function(data, counts, label = '0'){
 
 rnaseq.estimate_disp <- function(data, label = 'rmlowexp'){
     
-    message(
+    msg(
         sprintf(' > Estimating dispersion on expression list `%s`', label)
     )
     
@@ -704,7 +801,7 @@ rnaseq.estimate_disp <- function(data, label = 'rmlowexp'){
 
 rnaseq.glm_fit <- function(data, label = 'rmlowexp'){
     
-    message(
+    msg(
         sprintf(' > Fitting GLM on expression list `%s`', label)
     )
     
@@ -729,7 +826,7 @@ rnaseq.plot_mds <- function(data, label = 'rmlowexp', tissues = NULL){
     
     pdfname <- sprintf('%s_mds_%s_%s.pdf', data$prefix, label, tissue_lab)
     
-    message(sprintf(
+    msg(sprintf(
         ' > Plotting MDS of expression list `%s`; plotting into `%s`',
         label, pdfname
     ))
@@ -774,7 +871,7 @@ rnaseq.plot_bcv <- function(data){
     
     pdfname <- sprintf('%s_bcv.pdf', data$prefix)
     
-    cairo_pdf(pdfname, width = 5, height = 5)
+    cairo_pdf(pdfname, width = 5, height = 5, family = 'DINPro')
         
         plotBCV(data$rmlowexp)
         
@@ -787,7 +884,7 @@ rnaseq.plot_bcv <- function(data){
 
 rnaseq.exact_test <- function(data, pair = 1:2){
     
-    message(' > Performing exact tests')
+    msg(' > Performing exact tests')
     
     data$et <- exactTest(data$rmlowexp, pair = pair)
     
@@ -798,9 +895,15 @@ rnaseq.exact_test <- function(data, pair = 1:2){
 
 rnaseq.plot_md <- function(data){
     
-    message(' > Plotting MD')
+    pdfname <- sprintf('%s_md.pdf', data$prefix)
     
-    plotMD(data$et)
+    msg(sprintf(' > Plotting MD into `%s`', pdfname))
+    
+    cairo_pdf(pdfname, height = 5, width = 5, family = 'DINPro')
+        
+        plotMD(data$et)
+        
+    dev.off()
     
     return(data)
     
@@ -809,7 +912,7 @@ rnaseq.plot_md <- function(data){
 
 rnaseq.map_entrez <- function(data, var, sub = 'table'){
     
-    message(' > Mapping to Entrez')
+    msg(' > Mapping to Entrez')
     
     entrezvar <- sprintf('%s_entrez', var)
     
@@ -837,7 +940,7 @@ rnaseq.goenrich <- function(data, var = 'et_entrez'){
     
     govar <- sprintf('go_%s', var)
     
-    message(' > GO enrichment analysis')
+    msg(' > GO enrichment analysis')
     
     data[[govar]] <- goana(data[[var]], species = 'Mm')
     
@@ -850,9 +953,9 @@ rnaseq.keggenrich <- function(data, var = 'et_entrez'){
     
     keggvar <- sprintf('kegg_%s', var)
     
-    message(' > KEGG pathway enrichment analysis')
+    msg(' > KEGG pathway enrichment analysis')
     
-    data[[keggvar]] <- keggaa(data[[var]], species = 'Mm')
+    data[[keggvar]] <- kegga(data[[var]], species = 'Mm')
     
     return(data)
     
@@ -863,7 +966,7 @@ rnaseq.volcano <- function(data, var = 'et'){
     
     pdfname <- sprintf('%s_volcano.pdf', data$prefix)
     
-    message(sprintf(' > Plotting volcano plot into `%s`', pdfname))
+    msg(sprintf(' > Plotting volcano plot into `%s`', pdfname))
     
     genes <- rownames(data[[var]]$table)
     d <- as_tibble(data[[var]]$table) %>%
@@ -946,15 +1049,118 @@ rnaseq.volcano <- function(data, var = 'et'){
 }
 
 
+rnaseq.de_dataframe <- function(data, var = 'rmlowexp', devar = 'et'){
+    
+    toptab <- topTags(data[[devar]], n = dim(data[[devar]])[1])$table
+    rntop  <- rownames(toptab)
+    exptab <- cpm(data[[var]])
+    rnexp  <- rownames(exptab)
+    
+    dedf <- as_tibble(toptab) %>%
+        add_column(name = rntop) %>%
+        left_join(
+            as_tibble(exptab) %>%
+            add_column(name = rnexp),
+            by = c('name')
+        )
+    
+    data$dedf <- dedf
+    
+    return(data)
+    
+}
+
+
+rnaseq.de_heatmap <- function(data, n = 30){
+    
+    pdfname <- sprintf('%s_heatmap.pdf', data$prefix)
+    
+    msg(sprintf(' > Plotting heatmap into `%s`', pdfname))
+    
+    d <- (data$dedf %>% arrange(FDR))[1:n,]
+    
+    # clustering genes for ordering
+    rn   <- d$name
+    mcpm <- d %>%
+        dplyr::select(-logFC, -logCPM, -PValue, -FDR, -name) %>%
+        as.matrix()
+    rownames(mcpm) <- rn
+    dst <- dist(mcpm)
+    cl  <- hclust(dst, method = 'ward.D')
+    ord_names <- cl$labels[cl$order]
+    
+    # clustering samples for ordering
+    dst <- dist(t(mcpm))
+    cl  <- hclust(dst, method = 'ward.D')
+    ord_samples <- cl$labels[cl$order]
+    
+    d <- d %>%
+        rnaseq.gather_dedf() %>%
+        left_join(
+            data$samples %>%
+            dplyr::select(sample, sample_name),
+            by = c('sample')
+        ) %>%
+        mutate(
+            name = factor(name, levels = ord_names, ordered = TRUE),
+            sample = factor(sample, levels = ord_samples, ordered = TRUE)
+        )
+    
+    xlabs <- d %>%
+        group_by(sample) %>%
+        summarize_all(first) %>%
+        ungroup() %>%
+        (function(x){
+            setNames(as.character(x$sample_name), x$sample)
+        })()
+    
+    p <- ggplot(d, aes(x = sample, y = name, fill = log2(cpm))) +
+        geom_tile() +
+        scale_x_discrete(labels = xlabs) +
+        scale_fill_viridis(
+            guide = guide_legend(title = 'Count per\nmillion (log2)'),
+            breaks = seq(-5, 10, 2.5)
+        ) +
+        ylab('Transcripts') +
+        xlab('Samples') +
+        theme_minimal() +
+        theme(
+            text = element_text(family = 'DINPro'),
+            axis.text.x = element_text(
+                angle = 90, vjust = 0.5, size = 10, hjust = 1
+            )
+        )
+    
+    ggsave(pdfname, device = cairo_pdf, width = 5, height = 9)
+    
+    return(data)
+    
+}
+
+
+rnaseq.gather_dedf <- function(dedf){
+    
+    (
+        dedf %>%
+        gather(
+            key = sample,
+            value = cpm,
+            -logFC, -logCPM, -PValue, -FDR, -name
+        )
+    )
+    
+}
+
+
 rnaseq.hts_filter3 <-function(data){
     
-    message(' > HTS filter with GLM fit')
+    msg(' > HTS filter with GLM fit')
     
     data$dgelist <- estimateDisp(data$dgelist, design = data$design_matrix)
     data$fit <- glmFit(data$dgelist, design = data$design_matrix)
     data$lrt <- glmLRT(data$fit, coef = 2)
     
-    cairo_pdf('hts3.pdf', width = 6, height = 6)
+    cairo_pdf('hts3.pdf', width = 6, height = 6, family = 'DINPro')
         
         par(mfrow = c(1, 2), mar = c(4, 4, 2, 2))
         
@@ -968,5 +1174,12 @@ rnaseq.hts_filter3 <-function(data){
     dev.off()
     
     return(data)
+    
+}
+
+
+msg <- function(t){
+    
+    message(sprintf('  [%s]  %s', format(Sys.time(), '%X'), t))
     
 }
