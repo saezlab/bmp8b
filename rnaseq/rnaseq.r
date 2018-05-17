@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Dénes Türei EMBL 2018
+# Dénes Türei Uniklinik RWTH Aachen 2018
 # turei.denes@gmail.com
 
 # generic
@@ -9,9 +9,11 @@ require(dplyr)
 require(tidyr)
 require(purrr)
 require(tibble)
+require(rlang)
 require(ggplot2)
 require(ggrepel)
 require(viridis)
+require(VennDiagram)
 
 # bioconductor
 require(limma)
@@ -62,10 +64,24 @@ rnaseq.multi <- function(
             )
         ) %>%
         left_join(
-            rnaseq.get_series_matrix(geo_id, datadir) %>%
-                dplyr::select(sample_name),
+            rnaseq.samples_df(
+                rnaseq.get_series_matrix(geo_id, datadir)
+            ),
             by = c('sample')
-        )
+        ) %>%
+        rnaseq.de_heatmap(sdata,
+            prefix = geo_id
+        ) %>%
+        rnaseq.de_heatmap(sdata,
+            prefix = geo_id,
+            by_sample = FALSE
+        ) %>%
+        rnaseq.de_heatmap(sdata,
+            prefix = geo_id,
+            by_sample = FALSE,
+            fc_fdr = 'FDR'
+        ) %>%
+        rnaseq.samples_pca(prefix = geo_id)
     
     return(data.summary)
     
@@ -149,8 +165,8 @@ rnaseq.main <- function(
     {`if`(
         do_de,
         rnaseq.volcano(.) %>%
-        rnaseq.de_dataframe() %>%
-        rnaseq.de_heatmap(),
+        rnaseq.de_dataframe(), #%>%
+        #rnaseq.de_heatmap(),
         .
     )}
     #rnaseq.hts_filter2() %>%
@@ -1071,58 +1087,217 @@ rnaseq.de_dataframe <- function(data, var = 'rmlowexp', devar = 'et'){
 }
 
 
-rnaseq.de_heatmap <- function(data, n = 30){
+rnaseq.de_heatmap_preprocess_single <- function(
+        data,
+        n = 30
+    ){
     
-    pdfname <- sprintf('%s_heatmap.pdf', data$prefix)
-    
-    msg(sprintf(' > Plotting heatmap into `%s`', pdfname))
-    
-    d <- (data$dedf %>% arrange(FDR))[1:n,]
-    
-    # clustering genes for ordering
-    rn   <- d$name
-    mcpm <- d %>%
-        dplyr::select(-logFC, -logCPM, -PValue, -FDR, -name) %>%
-        as.matrix()
-    rownames(mcpm) <- rn
-    dst <- dist(mcpm)
-    cl  <- hclust(dst, method = 'ward.D')
-    ord_names <- cl$labels[cl$order]
-    
-    # clustering samples for ordering
-    dst <- dist(t(mcpm))
-    cl  <- hclust(dst, method = 'ward.D')
-    ord_samples <- cl$labels[cl$order]
-    
-    d <- d %>%
+    (
+        (data$dedf %>% arrange(FDR))[1:n,] %>%
         rnaseq.gather_dedf() %>%
         left_join(
             data$samples %>%
             dplyr::select(sample, sample_name),
             by = c('sample')
         ) %>%
-        mutate(
-            name = factor(name, levels = ord_names, ordered = TRUE),
-            sample = factor(sample, levels = ord_samples, ordered = TRUE)
-        )
+        rnaseq.by_sample_select() %>%
+        mutate(val = log2(val)) %>% # log2(CPM)
+        rnaseq.de_heatmap_df_group()
+    )
     
-    xlabs <- d %>%
-        group_by(sample) %>%
+}
+
+
+rnaseq.by_sample_select <- function(d){
+    
+    (
+        d %>%
+        dplyr::select(
+            name,
+            val = cpm,
+            x = sample,
+            label = sample_name
+        ) %>%
+        mutate(val = log10(val)) %>%
+        mutate(val = ifelse(val == -Inf, 0, val))
+    )
+    
+}
+
+
+rnaseq.de_heatmap_df_group <- function(d){
+    
+    (
+        d %>%
+        group_by(name, x) %>%
+        summarize_all(first) %>%
+        ungroup()
+    )
+    
+}
+
+
+rnaseq.de_heatmap_df_spread <- function(d){
+    
+    (
+        d %>%
+        group_by(name, label) %>%
         summarize_all(first) %>%
         ungroup() %>%
-        (function(x){
-            setNames(as.character(x$sample_name), x$sample)
+        spread(x, val)
+    )
+    
+}
+
+
+print_names <- function(d){
+    
+    print(names(d))
+    
+    return(d)
+    
+}
+
+
+print_something <- function(d){
+    
+    print('hello')
+    
+    return(d)
+    
+}
+
+
+print_dim <- function(d){
+    
+    print(dim(d))
+    
+    return(d)
+    
+}
+
+
+rnaseq.de_heatmap_preprocess_multi <- function(
+        data,
+        n = 30,
+        by_sample = TRUE,
+        fc_fdr = 'FC'
+    ){
+    
+    vcol <- sym(`if`(fc_fdr == 'FC', 'logFC', 'FDR'))
+    
+    (
+        data %>%
+        filter(FDR <= .05) %>%
+        group_by(name) %>%
+        mutate(minrank = min(rank)) %>%
+        ungroup() %>%
+        filter(minrank <= n) %>%
+        mutate(FDR = -log10(FDR) * sign(logFC)) %>%
+        {`if`(
+            by_sample,
+            rnaseq.by_sample_select(.),
+            # stupid dplyr can not select one column twice
+            # it can duplicate column only in mutate
+            mutate(., comp2 = comp) %>%
+            dplyr::select(name, val = !!vcol, x = comp, label = comp2)
+        )} %>%
+        rnaseq.de_heatmap_df_group()
+    )
+    
+}
+
+
+rnaseq.de_heatmap <- function(
+        data,
+        n = 30,
+        by_sample = TRUE,
+        prefix = '',
+        fc_fdr = 'FC'
+    ){
+    #'
+    #' @param by_sample Whether the columns of the heatmap should be
+    #' samples or conditions.
+    
+    single <- !is_tibble(data)
+    prefix <- `if`(single, data$prefix, prefix)
+    
+    pdfname <- sprintf(
+        '%s_%sheatmap.pdf',
+        prefix,
+        `if`(single, '', sprintf('multi_%s_', fc_fdr))
+    )
+    
+    collab <- `if`(
+        single || by_sample,
+        'Count per\nmillion (log2)',
+        `if`(
+            fc_fdr == 'FC',
+            'Fold change (log)',
+            'FDR (-log\nwith sign of\nfold change)'
+        )
+    )
+    
+    xlabel <- `if`(by_sample, 'Samples', 'Comparisons')
+    
+    msg(sprintf(' > Plotting heatmap into `%s`', pdfname))
+    
+    d <-
+        `if`(
+            single,
+            rnaseq.de_heatmap_preprocess_single(data),
+            rnaseq.de_heatmap_preprocess_multi(
+                data,
+                by_sample = by_sample,
+                fc_fdr = fc_fdr
+            )
+        )
+    
+    # clustering genes for ordering
+    mcpm <- rnaseq.cpm_matrix(d)
+    
+    dst <- dist(mcpm)
+    cl  <- hclust(dst, method = 'ward.D')
+    ord_name <- cl$labels[cl$order]
+    
+    # clustering samples/comparisons for ordering
+    dst <- dist(t(mcpm))
+    cl  <- hclust(dst, method = 'ward.D')
+    ord_x <- cl$labels[cl$order]
+    
+    d <- d %>%
+        mutate(
+            name = factor(name, levels = ord_name, ordered = TRUE),
+            x    = factor(x,    levels = ord_x,    ordered = TRUE)
+        )
+    
+    height <- dim(mcpm)[1] / 10 + 6
+    width  <- dim(mcpm)[2] / 7 + 3
+    
+    xlabs <- d %>%
+        group_by(x) %>%
+        summarize_all(first) %>%
+        ungroup() %>%
+        (function(tbl){
+            setNames(as.character(tbl$label), tbl$x)
         })()
     
-    p <- ggplot(d, aes(x = sample, y = name, fill = log2(cpm))) +
+    d <- bind_rows(
+        d,
+        expand.grid(name = unique(d$name), x = unique(d$x)) %>%
+        left_join(d, by = c('name', 'x')) %>%
+        filter(is.na(val))
+    )
+    
+    p <- ggplot(d, aes(x = x, y = name, fill = val)) +
         geom_tile() +
         scale_x_discrete(labels = xlabs) +
         scale_fill_viridis(
-            guide = guide_legend(title = 'Count per\nmillion (log2)'),
-            breaks = seq(-5, 10, 2.5)
+            guide = guide_legend(title = collab)#,
+            #breaks = seq(-5, 10, 2.5)
         ) +
         ylab('Transcripts') +
-        xlab('Samples') +
+        xlab(xlabel) +
         theme_minimal() +
         theme(
             text = element_text(family = 'DINPro'),
@@ -1131,12 +1306,83 @@ rnaseq.de_heatmap <- function(data, n = 30){
             )
         )
     
-    ggsave(pdfname, device = cairo_pdf, width = 5, height = 9)
+    ggsave(pdfname, device = cairo_pdf, width = width, height = height)
     
     return(data)
     
 }
 
+
+rnaseq.samples_pca <- function(data, prefix = ''){
+    
+    pdfname <- sprintf('%s_pca.pdf', prefix)
+    
+    msg(sprintf(' > Plotting PCA into `%s`', pdfname))
+    
+    samples <- data %>%
+        dplyr::select(sample, sample_name) %>%
+        group_by(sample, sample_name) %>%
+        summarize_all(first) %>%
+        ungroup()
+    
+    d <- rnaseq.de_heatmap_preprocess_multi(data, n = Inf)
+    mcpm <- rnaseq.cpm_matrix(d)
+    pca <- prcomp(t(mcpm))
+    
+    rn <- rownames(pca$x)
+    pcadata <- as_tibble(pca$x) %>%
+        add_column(sample = rn) %>%
+        left_join(samples, by = c('sample'))
+        
+    p <- ggplot(pcadata, aes(x = PC1, y = PC2, color = sample_name)) +
+        geom_point() +
+        scale_color_brewer(
+            palette = 'Set1',
+            guide = guide_legend(title = 'Conditions')
+        ) +
+        xlab('PC1') +
+        ylab('PC2') +
+        theme_minimal() +
+        theme(
+            text = element_text(family = 'DINPro'),
+            panel.grid.major = element_line(color = '#CCCCCC')
+        )
+    
+    ggsave(pdfname, device = cairo_pdf, width = 6, height = 5)
+    
+    return(data)
+    
+}
+
+
+rnaseq.venn <- function(data, prefix = ''){
+    
+    
+    
+    return(data)
+    
+}
+
+
+rnaseq.cpm_matrix <- function(d){
+    
+    mcpm <- d %>%
+        dplyr::select(-label) %>%
+        spread(key = x, value = val)
+    
+    rn <- mcpm$name
+    
+    mcpm <- mcpm %>%
+        dplyr::select(-name) %>%
+        as.matrix()
+    
+    mcpm[is.na(mcpm)] <- 0
+    
+    rownames(mcpm) <- rn
+    
+    return(mcpm)
+    
+}
 
 rnaseq.gather_dedf <- function(dedf){
     
