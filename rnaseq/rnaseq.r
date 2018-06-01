@@ -81,7 +81,9 @@ rnaseq.multi <- function(
             by_sample = FALSE,
             fc_fdr = 'FDR'
         ) %>%
-        rnaseq.samples_pca(prefix = geo_id)
+        rnaseq.samples_pca(prefix = geo_id) %>%
+        rnaseq.goi_boxplot(prefix = geo_id) %>%
+        rnaseq.goi_boxplot(prefix = geo_id, logscale = TRUE)
     
     return(data.summary)
     
@@ -1181,14 +1183,15 @@ rnaseq.de_heatmap_preprocess_multi <- function(
         data,
         n = 30,
         by_sample = TRUE,
-        fc_fdr = 'FC'
+        fc_fdr = 'FC',
+        max_fdr = .05
     ){
     
     vcol <- sym(`if`(fc_fdr == 'FC', 'logFC', 'FDR'))
     
     (
         data %>%
-        filter(FDR <= .05) %>%
+        filter(FDR <= max_fdr) %>%
         group_by(name) %>%
         mutate(minrank = min(rank)) %>%
         ungroup() %>%
@@ -1225,7 +1228,15 @@ rnaseq.de_heatmap <- function(
     pdfname <- sprintf(
         '%s_%sheatmap.pdf',
         prefix,
-        `if`(single, '', sprintf('multi_%s_', fc_fdr))
+        `if`(
+            single,
+            '',
+            `if`(
+                by_sample,
+                'multi_CPM_',
+                sprintf('multi_%s_', fc_fdr)
+            )
+        )
     )
     
     collab <- `if`(
@@ -1358,6 +1369,85 @@ rnaseq.samples_pca <- function(data, prefix = ''){
 rnaseq.venn <- function(data, prefix = ''){
     
     
+    
+    return(data)
+    
+}
+
+
+rnaseq.goi_boxplot <- function(
+        data,
+        goi = c('Bmp8b', 'Nrg4', 'Vegfa', 'Vegfb', 'Ngf', 'Dio2',
+                'Prdm16', 'Ppara', 'Ppargc1a', 'Ppargc1b', 'Elovl3',
+                'Adrb3', 'Rgs2', 'Acadl', 'Cpt1b', 'Ntf3', 'Pgf'),
+        prefix = '',
+        logscale = FALSE
+    ){
+    
+    pdfname <- sprintf(
+        '%s_boxplot_%s_%s.pdf',
+        prefix,
+        paste(goi, collapse = '-'),
+        `if`(logscale, 'log', 'cpm')
+    )
+    
+    width <- length(goi) / 2 + 2
+    
+    ylabel <- `if`(logscale, 'CPM (log)', 'CPM (relative to highest)')
+    
+    msg(sprintf(' > Plotting into `%s`', pdfname))
+    
+    d <- rnaseq.de_heatmap_preprocess_multi(data, n = Inf, max_fdr = 1.0) %>%
+        filter(name %in% goi)
+    
+    d <- d %>%
+        {`if`(
+            logscale,
+            .,
+            mutate(., val = 10 ** val) %>%
+            group_by(name) %>%
+            mutate(val = val / max(val)) %>%
+            ungroup()
+        )} %>%
+        mutate(
+            label = factor(
+                label,
+                levels = c('iWAT_WT', 'iWAT_UCP', 'BAT_WT', 'BAT_UCP'),
+                ordered = TRUE
+            )
+        ) %>%
+        mutate(
+            tissue = gsub('_.*', '', label)
+        ) %>%
+        mutate(
+            label = recode(
+                label,
+                iWAT_WT = 'WAT wt',
+                iWAT_UCP = 'WAT UCP-/-',
+                BAT_WT = 'BAT wt',
+                BAT_UCP = 'BAT UCP-/-'
+            )
+        )
+    
+    p <- ggplot(d, aes(y = val, x = label, color = tissue)) +
+        geom_boxplot() +
+        facet_grid(. ~ name) +
+        scale_color_brewer(palette = 'Set1', guide = FALSE) +
+        xlab('Transcripts') +
+        ylab(ylabel) +
+        theme_linedraw() +
+        theme(
+            text = element_text(family = 'DINPro'),
+            axis.text.x = element_text(
+                size = 5,
+                angle = 45,
+                vjust = 1,
+                hjust = 1
+            ),
+            panel.grid.major = element_line(color = '#CCCCCC')
+        )
+    
+    ggsave(pdfname, device = cairo_pdf, width = width, height = 3)
     
     return(data)
     

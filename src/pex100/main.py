@@ -4,7 +4,7 @@
 #
 #  This file is part of the `pex100` Python module
 #
-#  Copyright (c) 2016-2017 - EMBL-EBI
+#  Copyright (c) 2016-2018 - EMBL
 #
 #  File author(s): Dénes Türei (turei.denes@gmail.com)
 #
@@ -97,7 +97,6 @@ class Pex100(object):
         """
         This is the main class of the module representing an analysis
         on a set of phosphorylation sites across multiple samples.
-        It provides various methods and workflows for its analysis.
         
         :param str dirBase: The base directory.
         :param str fnIdMapping: The ID mapping (layout) file of the assay.
@@ -1516,7 +1515,7 @@ class Pex100(object):
         
         :param list keep_also: List of additional vertex names
                                to include in core.
-        :param bool step1: Whether include not only direct
+        :param bool step1: Whether to include not only direct
                            links but one step indirect connections.
         :param int more_steps: Include longer indirect connections. This
                                param defines the number of mediator nodes.
