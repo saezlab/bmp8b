@@ -1,7 +1,7 @@
 #!/usr/bin/Rscript
 
 #
-# # Dénes Türei EMBL-EBI 2017
+# # Dénes Türei EMBL-EBI 2017-2018
 #
 
 require(ggplot2)
@@ -13,12 +13,12 @@ library(gtable)
 #require(cowplot)
 #require(egg)
 
+# with effect signs
+source('combined.plot.incl.r')
 
 fctop <- get_fctop()
 func <- get_func()
 
-# with effect signs
-source('combined.plot.incl.r')
 
 combined_plot(fctop = fctop,
               func = func,
@@ -101,6 +101,7 @@ combined_plot(fctop = fctop,
               wpaper   = 8,
               leg2y    = -.1495)
 
+source('combined.plot.incl.r')
 # with effect signs, top 50
 combined_plot(fctop = fctop,
               func = func,

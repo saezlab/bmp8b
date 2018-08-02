@@ -37,7 +37,7 @@ upgs  <- suppressMessages(read_tsv(upgsfile))
 
 rw.read_data <- function(rwfile, w = '5w'){
     
-    excl <- c('B2m', 'Betaactin', 'BK', 'Bmp5', 'Erbb3', 'F480', 'Th', 'Tnfa')
+    excl <- c('B2m', 'Betaactin', 'Bk', 'Bmp5', 'Erbb3', 'F480', 'Th', 'Tnfa')
     
     # joining expression and tf-target tables
     d <- dexp %>%
@@ -398,11 +398,11 @@ mn <- mean((d %>% filter( !tfalt | !phosalt))$splen %>% c)
 ranks <- data.frame(
     x = seq(.1, 1, .01),
     alt  = rev(log(quantile(
-        (d %>% filter(  tfalt &  phosalt))$dist %>% c,
+        (d %>% filter(  tfalt &  phosalt))$dist_o %>% c,
         seq(.1, 1, .01)
     ))),
     nalt = rev(log(quantile(
-        (d %>% filter( !tfalt | !phosalt))$dist %>% c,
+        (d %>% filter( !tfalt | !phosalt))$dist_o %>% c,
         seq(.1, 1, .01)
     )))
 ) %>%
@@ -445,6 +445,7 @@ p <- ggplot(ranks, aes(x = x, y = logprox, color = alt)) +
     )
 
 ggsave('prox-omnipath5-fc1.5p-p05.pdf', device = cairo_pdf, width = 4.2, height = 2.7)
+
 
 p <- ggplot(d, aes(y = log(dist_o), x = gs_mouse, color = phosalt)) +
     geom_boxplot(outlier.size = .5, outlier.shape = 18, lwd = .3) +

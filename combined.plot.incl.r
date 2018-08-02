@@ -115,11 +115,12 @@ plot_heatmap <- function(data){
     
     lim <- ceiling(max(abs(data$value)))
     
-    print(max(abs(data$value)))
+    #print(max(abs(data$value)))
     
     p <- ggplot(data, aes(x = variable, y = psite)) +
         geom_tile(aes(fill = ifelse(value < -2, -2, ifelse(value > 2, 2, value)))) +
-        scale_fill_gradient2(high = '#990000', mid = 'white', low = '#009900',
+        #scale_fill_gradient2(high = '#AA3377', mid = 'white', low = '#4477AA',
+        scale_fill_gradient2(high = '#4477AA', mid = 'white', low = '#AA3377',
                              limits = c(-2, 2),
                              guide = guide_colorbar(
                                  title = 'Fold change\n(log2)',
@@ -200,7 +201,6 @@ combined_plot <- function(fctop,
     rownames(headfctop) <- rnames
     mheadfctop <- as.matrix(headfctop[,9:11])
     rownames(mheadfctop) <- rnames
-    
     #return(mheadfctop)
     psites_dendro <- as.dendrogram(hclust(dist(mheadfctop / apply(abs(mheadfctop), 1, max))))
     ordr <- order.dendrogram(psites_dendro)
@@ -212,38 +212,40 @@ combined_plot <- function(fctop,
     dfheadfctop$psite <- with(dfheadfctop, factor(psite, levels = psite, ordered = TRUE))
     mltdfheadfctop <- melt(dfheadfctop, id.vars = 'psite')
     dendrodatapsite <- dendro_data(psites_dendro)
-    
     # the functional annotations
     # selecting only those for the top
     headfunc <- func[func$label %in% rownames(dfheadfctop),]
     # reaordering factor levels
     headfunc$label <- factor(headfunc$label, levels = onames[[1]])
 
-    # plotting the heatmap
-    p1  <- plot_heatmap(mltdfheadfctop)
-    # plotting the dendrogram
-    p3  <- plot_dendrogram(dendrodatapsite)
-    # plotting functional annotations
-    p4l <- plot_functional(headfunc, leg = TRUE)
-    p4  <- plot_functional(headfunc, leg = FALSE)
-    
-    leg4 <- gtable::gtable_filter(ggplot_gtable(ggplot_build(p4l)), 'guide-box')
-    
-    #ggsave('gg_func_table_dendro-order.pdf', device = cairo_pdf, width = 5, height = 12)
-    
-    # combined plot of only the dendrogram and fold changes heatmap
     fname <- get_pdfname(FALSE, signs, top)
-    
-    cat(sprintf('\t:: Plotting to %s\n', fname))
-    cat(sprintf('\t:: Values at NFKB1-S927: %s\n', paste(as.character(headfctop[headfctop$psite == 'NFKB1_S927',]))))
-    
     cairo_pdf(filename = fname, width = 8, height = 14)
+        
+        # plotting the heatmap
+        p1  <- plot_heatmap(mltdfheadfctop)
+        # plotting the dendrogram
+        p3  <- plot_dendrogram(dendrodatapsite)
+        # plotting functional annotations
+        p4l <- plot_functional(headfunc, leg = TRUE)
+        p4  <- plot_functional(headfunc, leg = FALSE)
+        
+        # combined plot of only the dendrogram and fold changes heatmap
+        leg4 <- gtable::gtable_filter(ggplot_gtable(ggplot_build(p4l)), 'guide-box')
+        
+        #ggsave('gg_func_table_dendro-order.pdf', device = cairo_pdf, width = 5, height = 12)
+        cat(sprintf('\t:: Plotting to %s\n', fname))
+#         cat(sprintf(
+#             '\t:: Values at NFKB1-S927: %s\n',
+#             paste(as.character(headfctop[headfctop$psite == 'NFKB1_S927',]))
+#         ))
+        
         grid.newpage()
-        print(p1, vp = viewport(0.8, 1.0, x = .4, y = .5))
-        print(p3, vp = viewport(0.2, 1.076, x = 0.88, y = 0.498))
+        #print(p1, vp = viewport(0.8, 1.0, x = .4, y = .5))
+        #print(p3, vp = viewport(0.2, 1.076, x = 0.88, y = 0.498))
+        
     dev.off()
     
-    print(leg4$widths)
+    #print(leg4$widths)
     
     # combined plot of all 3 plots
     fname <- get_pdfname(TRUE, signs, top)
