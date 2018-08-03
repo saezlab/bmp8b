@@ -80,7 +80,7 @@ class Pex100(object):
     def __init__(self,
                  dirBase = '..',
                  fnIdMapping = 'PEX100_Layout.csv',
-                 fnXlsFullData = 'AssayData-Cambridge-Peirce-150515.xlsx',
+                 fnXlsFullData = 'Bmp8b_NE_150515.xlsx',
                  fnCombined = 'bmp8_%s.csv',
                  fnFcTable = 'fc_%s_%s.csv',
                  fnFcTopTable = 'fctop_%s_%s.csv',
